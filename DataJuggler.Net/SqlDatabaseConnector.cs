@@ -33,6 +33,8 @@ namespace DataJuggler.Net
 		private bool captureidentity;
 		private bool isinsert;
         private string connectionString;
+        private bool ignoreDataSync;
+        private bool ignoreAzureFirewallRules;
         private const string MultipleResultSets = "MultipleActiveResultSets=True";
 		#endregion
 
@@ -1422,15 +1424,18 @@ namespace DataJuggler.Net
 			}
 			#endregion
 			
-			#region LoadDatabaseSchema(Database database)
+			#region LoadDatabaseSchema(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
 			/// <summary>
 			/// Loads The Database Schema For The Database
 			/// </summary>
 			/// <param name="database"></param>
 			/// <param name="ConnectionString"></param>
 			/// <returns></return>
-			public Database LoadDatabaseSchema(Database database)
+			public Database LoadDatabaseSchema(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
 			{
+                // Update for version 5.5
+                IgnoreDataSync = ignoreDataSync;
+                IgnoreAzureFirewallRules = ignoreAzureFirewallRules;
 				
 				try
 				{
@@ -2126,7 +2131,7 @@ namespace DataJuggler.Net
                         // set xType
                         string xType = dr["xType"].ToString().Trim();
 
-                        // Is this a 'table'
+                        // Is this not a system diagram
                         bool addTable = (dataTable.Name != "sysdiagrams");
 
                         // if this is a View
@@ -2134,11 +2139,38 @@ namespace DataJuggler.Net
                         {
                             // Set IsView to true
                             dataTable.IsView = true;
+
+                            // if IgnoreAzureFirewallRules is true
+                            if (IgnoreAzureFirewallRules)
+                            {
+                                // if this is the view for Azure Firewall Rules
+                                if (dataTable.Name == "database_firewall_rules")
+                                {
+                                    // do not add this table
+                                    addTable = false;
+                                }
+                            }
                         }
                         else
                         {
                             // Default to table
                             dataTable.IsView = false;
+                        }
+
+                        // if IgnoreDataSync is true
+                        if (IgnoreDataSync)
+                        {
+                            // if this is a DataSync table
+                            if (dataTable.SchemaName == "DataSync")
+                            {
+                                // do not add this table
+                                addTable = false;
+                            }
+                            else if (dataTable.Name.ToLower().Contains("_dss"))
+                            {
+                                // do not add this table
+                                addTable = false;
+                            }
                         }
                         
                         // This is a quick and dirty way to exclude a table, it is on my to do list to handle this
@@ -2236,21 +2268,23 @@ namespace DataJuggler.Net
                         {
                             // Set IsView to true
                             dt.IsView = true;
+
+                            // if IgnoreAzureFirewallRules is true
+                            if (IgnoreAzureFirewallRules)
+                            {
+                                // if this is the view for Azure Firewall Rules
+                                if (dt.Name == "database_firewall_rules")
+                                {
+                                    // do not add this table
+                                    addTable = false;
+                                }
+                            }
                         }
                         else
                         {
                             // Default to table
                             dt.IsView = false;
                         }
-
-                        // this is used for a project I develop for one of 
-                        // my clients. Add any table or view names here
-                        // that you do not want to be included in the build.
-                        //if (dataTable.Name == "Sequence")
-                        //{
-                        //    // do not add this table
-                        //    addTable = false;
-                        //}
 
                         // If the table should be added (Test Again)
                         if (addTable)
@@ -2470,10 +2504,12 @@ namespace DataJuggler.Net
 				
 				// If Database Is Connected
 				string sql = "Select * From SysObjects Where Type = 'P' Order By Name";
+
+                // local
+                bool skip = false;
 				
 				try
 				{
-				
 					// Open The command Object
                     this.Command = new SqlCommand(sql, DatabaseConnection);
 					SqlDataAdapter adapter = new SqlDataAdapter(this.Command);
@@ -2487,6 +2523,9 @@ namespace DataJuggler.Net
                     // itereate the Rows
 					foreach(System.Data.DataRow dr in ds.Tables["Procedures"].Rows)
 					{
+                        // reset
+                        skip = false;
+
 						// Create A New Stored Procedures
 						DataJuggler.Net.StoredProcedure sp = new StoredProcedure();
 							
@@ -2495,9 +2534,24 @@ namespace DataJuggler.Net
 						
 						// Set Parameters
 						sp = LoadStoredProcedureParameters(sp);
-						
-						// Now Add This Stored procedure To procs Collection
-						procs.Add(sp);
+
+                        // if the procedure name contains dss
+                        if (IgnoreDataSync)
+                        {
+                            // if this procedure contains a data sync type name
+                            if (sp.ProcedureName.Contains("_dss"))
+                            {
+                                // we need to skip this procedure
+                                skip = true;
+                            }
+                        }
+
+                        // if skip equals false
+                        if (!skip)
+                        {
+						    // Now Add This Stored procedure To procs Collection
+						    procs.Add(sp);
+                        }
 					}
 			        
                     // if there are one or more stored procedures
@@ -3281,6 +3335,20 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
+
+            #region Command
+			public SqlCommand Command
+			{
+				get
+				{
+					return command;
+				}
+				set
+				{
+					command = value;
+				}
+			}
+			#endregion
 			
 		    #region Connected
 			public bool Connected
@@ -3334,7 +3402,7 @@ namespace DataJuggler.Net
             } 
             #endregion
 
-			#region SqlConnection DatabaseConnection 
+			#region DatabaseConnection 
 			public SqlConnection DatabaseConnection 
 			{
 				get
@@ -3347,22 +3415,8 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
-			
-			#region SqlCommand command
-			public SqlCommand Command
-			{
-				get
-				{
-					return command;
-				}
-				set
-				{
-					command = value;
-				}
-			}
-			#endregion
 
-			#region string FailedReason
+			#region FailedReason
 			public string FailedReason
 			{
 				get
@@ -3391,6 +3445,28 @@ namespace DataJuggler.Net
                     return hasDatabaseConnection;
                 }
             } 
+            #endregion
+
+            #region IgnoreDataSync
+            /// <summary>
+            /// This property gets or sets the value for IgnoreDataSync.
+            /// </summary>
+            public bool IgnoreDataSync
+            {
+               get { return ignoreDataSync; }
+               set { ignoreDataSync = value; }
+            }
+            #endregion
+
+            #region IgnoreAzureFirewallRules
+            /// <summary>
+            /// This property gets or sets the value for ignoreAzureFirewallRulesProcedure.
+            /// </summary>
+            public bool IgnoreAzureFirewallRules
+            {
+               get { return ignoreAzureFirewallRules; }
+               set { ignoreAzureFirewallRules = value; }                       
+            }
             #endregion
 			
 			#region IsInsert
