@@ -7,7 +7,8 @@
     <ProjectGuid>{AF3F5EC6-8494-4CA2-AAC0-B1FA4F752EF5}</ProjectGuid>
     <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
-    <ApplicationIcon>Data Juggler.ico</ApplicationIcon>
+    <ApplicationIcon>
+    </ApplicationIcon>
     <AssemblyKeyContainerName>
     </AssemblyKeyContainerName>
     <AssemblyName>DataJuggler.Net</AssemblyName>
@@ -108,8 +109,8 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
-    <Reference Include="DataJuggler.Core.UltimateHelper, Version=1.3.2.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\..\DBCompare\packages\DataJuggler.Core.UltimateHelper.1.3.2\lib\net461\DataJuggler.Core.UltimateHelper.dll</HintPath>
+    <Reference Include="DataJuggler.Core.UltimateHelper, Version=1.3.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\..\..\PasswordVault\PasswordVault\packages\DataJuggler.Core.UltimateHelper.1.3.3\lib\net461\DataJuggler.Core.UltimateHelper.dll</HintPath>
     </Reference>
     <Reference Include="System">
       <Name>System</Name>
