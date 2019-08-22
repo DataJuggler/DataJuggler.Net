@@ -2017,8 +2017,8 @@ namespace DataJuggler.Net
 					}
 				}
 
-				// If This table Has A Primary Key
-				if(table.HasPrimaryKey)
+				// If This table Has A Primary Key and not a view
+				if ((table.HasPrimaryKey) && (!table.IsView))
 				{
 					// Write Line
 					WriteLine("private bool delete;");
@@ -3224,8 +3224,8 @@ namespace DataJuggler.Net
 					    }
 				    }
 
-				    // Write Property For Delete If This table Has A Primary Key
-				    if(table.HasPrimaryKey)
+				    // Write Property For Delete If This table Has A Primary Key and this table is not a view
+				    if ((table.HasPrimaryKey) && (!table.IsView))
 				    {
 					    // Create field For Delete
 					    DataJuggler.Net.DataField DelField = new DataField();
