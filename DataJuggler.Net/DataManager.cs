@@ -20,7 +20,6 @@ namespace DataJuggler.Net
 		#region Private Variables
 		private string classfilename;
 		private DataManager.ClassOutputLanguage classlanguage;
-		private DataManager.FileOptions classfileoptions;
 		private string classname;
 		private List<Database> databases;
 		private bool exclude;
@@ -30,8 +29,7 @@ namespace DataJuggler.Net
 		private ReferencesSet references;
 		private bool serializable;
 		private string xmlfilename;
-		private DataManager.FileOptions xmlfileoptions;
-        private SQLDatabaseConnector dataConnector;
+		private SQLDatabaseConnector dataConnector;
 		#endregion
 
 		#region Constructor
@@ -44,10 +42,6 @@ namespace DataJuggler.Net
 
 				// Create References Collection
 				this.references = new ReferencesSet();
-
-				// Set FileOptions Default
-				this.ClassFileOptions = DataManager.FileOptions.SingleFile;
-
 			}
 			#endregion
 		
@@ -62,9 +56,6 @@ namespace DataJuggler.Net
 
 				// Create References Collection
 				this.references = new ReferencesSet();
-
-				// Set FileOptions Default
-				this.ClassFileOptions = DataManager.FileOptions.SingleFile;
 
 				// Set ProjectFolder, ClassFileName & xmlFileName
 				this.ProjectFolder = projectFolder;
@@ -281,20 +272,6 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region ClassFileOptions
-			public DataManager.FileOptions ClassFileOptions
-			{
-				get
-				{
-					return classfileoptions;
-				}
-				set
-				{
-					classfileoptions = value;
-				}
-			}
-			#endregion	
-
 			#region Databases
 			public List<Database> Databases
 			{
@@ -424,20 +401,6 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region XmlFileOptions	
-			public DataManager.FileOptions XmlFileOptions
-			{
-				get
-				{
-					return xmlfileoptions;
-				}
-				set
-				{
-					xmlfileoptions = value;
-				}
-			}
-			#endregion	
-
 			#region ClassLanguage	
 			public DataManager.ClassOutputLanguage ClassLanguage
 			{
@@ -504,15 +467,6 @@ namespace DataJuggler.Net
                 Guid = 10003,
                 Custom = 10004,
                 Enumeration = 10005
-            }
-            #endregion
-
-            #region Enum FileOptions
-            public enum FileOptions : int
-            {
-                SeperateFilesPerTable = 0,
-                SingleFile = 1,
-                SeperateFilesPerDatabase = 2
             }
             #endregion
 

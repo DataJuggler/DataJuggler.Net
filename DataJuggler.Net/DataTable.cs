@@ -35,6 +35,7 @@ namespace DataJuggler.Net
         private List<DataIndex> indexes;
         private List<CheckConstraint> checkConstraints;
         private List<ForeignKeyConstraint> foreignKeys;
+        private bool createBindingCallback;
         private string schemaName;
 		#endregion
 
@@ -341,14 +342,13 @@ namespace DataJuggler.Net
 				int primaryKeyCount = 0;
 				
 				// Int Count
-				foreach(DataField Field in this.ActiveFields)
+				foreach(DataField field in this.ActiveFields)
 				{
 					// Is This A Primary Key
-					if(Field.PrimaryKey)
+					if(field.PrimaryKey)
 					{
 						// Increment PrimaryKeyCount
 						primaryKeyCount++;
-						
 					}
 				}
 				
@@ -490,6 +490,20 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion	
+
+            #region CreateBindingCallback
+            public bool CreateBindingCallback
+            {
+                get
+                {
+                    return createBindingCallback;
+                }
+                set
+                {
+                    createBindingCallback = value;
+                }
+            }
+            #endregion
 
 			#region CreateCollectionClass
 			public bool CreateCollectionClass

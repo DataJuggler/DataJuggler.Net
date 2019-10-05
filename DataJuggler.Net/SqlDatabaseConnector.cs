@@ -623,6 +623,68 @@ namespace DataJuggler.Net
             }
             #endregion
 
+            #region GetDatabaseSchemaHash(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
+			/// <summary>
+			/// Loads The Database Schema For The Database and returns a hashed value representing the current schema
+			/// </summary>
+			/// <param name="database"></param>
+			/// <param name="ConnectionString"></param>
+			/// <returns></return>
+			public string GetDatabaseSchemaHash(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
+			{  
+                // initial value
+                string schemaHash = "";
+
+                // local
+                int schemaValue = 0;
+
+			    // call the method to load the schema
+				database = LoadDatabaseSchema(database, ignoreDataSync, ignoreAzureFirewallRules);
+
+                // If the database object exists
+                if (NullHelper.Exists(database))
+                {
+                    // if the Tables collection exists and has one or more items
+                    if (ListHelper.HasOneOrMoreItems(database.Tables))
+                    {
+                        // iterate the tables
+                        foreach (DataTable table in database.Tables)
+                        {
+                            // Add the value of this table Name
+                            schemaValue += GetTextValue(table.Name);
+
+                            // if the table has fields
+                            if (ListHelper.HasOneOrMoreItems(table.Fields))
+                            {
+                                // iterate the fields
+                                foreach (DataField field in table.Fields)
+                                {
+                                    // Add the value of this field Name
+                                    schemaValue += GetTextValue(field.FieldName);
+
+                                    // Add the value of this field DBDataType
+                                    schemaValue += GetTextValue(field.DBDataType);
+                                }
+                            }
+                        }
+                    }
+
+                    // if the schemaValue has been calculated
+                    if (schemaValue > 0)
+                    {
+                        // convert to a number
+                        string temp = schemaValue.ToString();
+
+                        // encrypt the string 
+                        schemaHash = CryptographyHelper.EncryptString(temp);
+                    }
+                }
+
+				// Return Database
+				return schemaHash;
+			}
+			#endregion
+
             #region GetNextField(ref string sql)
             /// <summary>
             /// This method finds the fieldNames in a sql statement.
@@ -1084,6 +1146,33 @@ namespace DataJuggler.Net
 
                 // return value
                 return tables;
+            }
+            #endregion
+
+            #region GetTextValue(string text)
+            /// <summary>
+            /// This method returns an integer value for the word given
+            /// </summary>
+            /// <param name="text"></param>
+            /// <returns></returns>
+            public int GetTextValue(string text)
+            {
+                // initial value
+                int textValue = 0;
+
+                // If the text string exists
+                if (TextHelper.Exists(text))
+                {
+                    // iterate the characters
+                    foreach (char c in text)
+                    {
+                        // add the value of this character
+                        textValue += (int) c;
+                    }
+                }
+
+                // return value
+                return textValue;
             }
             #endregion
 
@@ -3125,6 +3214,7 @@ namespace DataJuggler.Net
                         case "varchar":
                         case "nvarchar":
                         case "nchar":
+                        case "char":
 
                             // String
                             return DataManager.DataTypeEnum.String;

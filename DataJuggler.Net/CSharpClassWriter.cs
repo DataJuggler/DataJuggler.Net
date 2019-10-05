@@ -2,6 +2,7 @@
      
 #region using statements
 
+using DataJuggler.Core.UltimateHelper;
 using System;
 using System.IO;
 using System.Text;
@@ -32,6 +33,8 @@ namespace DataJuggler.Net
         private ProjectFileManager fileManager;
         private bool textWriterMode;
         private StringBuilder textWriter;
+        private const string DelegatesReference = "DataJuggler.Net.Core.Delegates";
+        private const string EnumerationsReference = "DataJuggler.Net.Core.Enumerations";
         #endregion
 		
 		#region Constructor
@@ -1350,178 +1353,50 @@ namespace DataJuggler.Net
 					
 			}
 			#endregion				
-			
-            #region WriteAllClassesToSingleFile()
+
+            #region WriteCallbackPrivateVariable()
             /// <summary>
-			/// This method writes all data classes to a single file
-			/// </summary>
-            private void WriteAllClassesToSingleFile(DataManager dataManager)
+            /// This method is used to write out a private variable 
+            /// </summary>
+            public void WriteCallbackPrivateVariable()
             {
-                // Create File
-                string fullPath = dataManager.ReturnFullPath(dataManager.ClassFileName);
+                // Create New String
+				StringBuilder sb = new StringBuilder("private ");
+        		
+				// Append dataType
+				sb.Append("ItemChangedCallback");
 
-                // if this is not the business object pass
-                // or if the file exists do not write the file
-                if ((!this.BusinessObjectPass) || (!System.IO.File.Exists(fullPath)))
-                {
-                    // Create File
-                    this.CreateFile(fullPath, DataManager.ProjectTypeEnum.ObjectLibrary);
+				// Append Space
+				sb.Append(" ");
 
-                    // Write References
-                    this.WriteReferences(dataManager.References);
+                // append the fieldName
+				sb.Append("callback");
 
-                    // Write Blank Line & NameSpace
-                    WriteLine();
+				// Append Closing Semicolon
+				sb.Append(";");
 
-                    // Write NameSpace
-                    WriteNamespace(dataManager.NamespaceName);
-
-                    // Write OpenBracket
-                    WriteOpenBracket();
-
-                    // Indent
-                    Indent++;
-
-                    // Write Class For Every Database
-                    foreach (Database DB in dataManager.Databases)
-                    {
-                        // Write Classes
-                        WriteClasses(DB.Tables, dataManager.NamespaceName);
-                    }
-
-                    // Write Blank Line
-                    WriteLine();
-
-                    // Decrease Indent
-                    Indent--;
-
-                    // Write CloseBracket
-                    WriteCloseBracket();
-
-                    // Close The File
-                    this.CloseFile();
-                }
+				// Write This Line
+				WriteLine(sb.ToString());
             }
             #endregion
 
-			#region WriteChangesProperty(DataJuggler.Net.DataTable table) void
-			private void WriteChangesProperty(DataJuggler.Net.DataTable table,DataJuggler.Net.DataField Field)
-			{
-				// locals
-				string PropertyLine = null;
-				string RegionLine = null;
+            #region WriteCallbackProperty()
+            /// <summary>
+            /// This method writes out the property for Callback
+            /// </summary>
+            public void WriteCallbackProperty()
+            {
+                // Create a new instance of a 'DataField' object.
+                DataField field = new DataField();
 
-				// Create StringBuilder
-				StringBuilder sb = new StringBuilder();
+                // Set the FieldName
+                field.FieldName = "Callback";
 
-				// Write A NewLine
-				WriteLine();
-
-				// increment Indent
-				Indent++;
-
-				// string newobjectname
-				string newobjectname = NewObjectName(GetClassName(table),false,"Initial",false);
-
-				// Start A New Region For This PropertyLine
-				RegionLine = GetRegionLine(Field);
-				BeginRegion(RegionLine);
-
-				// Get PropertyLineText
-				PropertyLine = GetPropertyLine(Field);
-
-				// Write The PropertyLine
-				WriteLine(PropertyLine);
-
-				// Write An OpenBracket
-				WriteOpenBracket();
-
-				// Increment Indent
-				Indent++;
-
-				// If ReadOnly or ReadWrite 
-				if(WriteGet(Field))
-				{
-							
-					// Write The Word Get
-					WriteLine("get");
-
-					// Write An OpenBracket
-					WriteOpenBracket();
-
-					// Increment Indent
-					Indent++;
-					
-					// Write Initial Changes
-					WriteInitialChanges(table);
-					
-					// Write Delete Changes
-					WriteDeleteChanges(table);
-					
-					// Write If Statement For Each field
-					foreach(DataField TField in table.ActiveFields)
-					{
-						WriteFieldChangesGet(TField, table);
-					}
-
-					// Write Blank Line
-					WriteLine();
-
-					// Write Comment No Changes
-					WriteComment("No Changes");
-
-					// Write Return False
-					WriteLine("return false;");
-
-					// Decrement Indent
-					Indent--;
-
-					// Write CloseBracket
-					WriteCloseBracket();
-				}
-
-				// If ReadWrite or WriteOnly
-				if(WriteSet(Field))
-				{
-					// Write The Word set
-					WriteLine("set");
-
-					// Write An OpenBracket
-					WriteOpenBracket();
-
-					// Increment Indent
-					Indent++;
-
-					// Write Comment For Clone Object Again To Reset Changes
-					WriteComment("Clone Object Again; Can Only Be Reset To False (No Changes)");
-
-					// This Resets The OriginalNewObjects
-					sb = new StringBuilder("this.");
-					sb.Append(newobjectname);
-					sb.Append(" = this.Clone();");
-					WriteLine(sb.ToString());
-
-					// Decrement Indent
-					Indent--;
-
-					// Write A CloseBracket
-					WriteCloseBracket();
-				}
-
-				// Decrement Indent
-				Indent--;
-
-				// Write A CloseBracket
-				WriteCloseBracket();
-
-				// EndRegion
-				EndRegion();
-
-				// decrement Indent
-				Indent--;
-			}
-			#endregion
-
+                // Write out the property for ItemChangedCallbackk
+                WriteProperty(field, "ItemChangedCallback");
+            }
+            #endregion
+			
 			#region WriteClass(DataTable table)
 			private void WriteClass(DataTable table)
 			{		
@@ -1537,7 +1412,7 @@ namespace DataJuggler.Net
 				// If the table should be Serialized
 				if ((table.Serializable) && (this.BusinessObjectPass))
 				{
-				    // Write Serializable
+				    // Write Serializable [Serializabe] tag
 				    WriteSerializable();
 				}
 
@@ -1951,19 +1826,62 @@ namespace DataJuggler.Net
 					return false;
 				}
 				
-				// If all classes are written to a single file
-                if (dataManager.ClassFileOptions == DataManager.FileOptions.SingleFile)
-				{
-                    // Not tested in a long time
+                // Write the classes for every table in all databases
+                foreach(Database db in dataManager.Databases)
+                {
+                    // now write classes for each table in this database
+                    // Update for DataTier.Net - Now only Active tables are written (Exclude = false, which is every field by default)
+                    foreach(DataTable dataTable in db.ActiveTables)
+                    {
+                        // must set the ObjectLibraryNameSpace for each table here
+                        dataTable.ObjectNameSpaceName = dataManager.NamespaceName;
+                    
+                        // Create File
+                        string fileName = GetClassFileName(dataTable);
+                        string fullPath = dataManager.ReturnFullPath(fileName);
 
-				    // Write Single File
-                    WriteAllClassesToSingleFile(dataManager);
-			    }
-			    else
-			    {   
-                    // Write Each Class To Its Own File
-                    WriteEachClassToSeperateFile(dataManager);
-			    }
+                        // if this is not the business object pass
+                        // or if the file exists do not write the file
+                        // Existing BusinessObject Classes are not overwritten
+                        // so you can modify the code. If there are any new tables
+                        // this will create a business object
+                        if ((!this.BusinessObjectPass) || (!System.IO.File.Exists(fullPath)))
+                        {
+                            // Create File
+                            this.CreateFile(fullPath, DataManager.ProjectTypeEnum.ObjectLibrary);
+
+                            // Write References
+                            this.WriteReferences(dataManager.References, dataTable.CreateBindingCallback);
+
+                            // Write Blank Line & NameSpace
+                            WriteLine();
+
+                            // Write NameSpace
+                            WriteNamespace(dataManager.NamespaceName);
+
+                            // Write OpenBracket
+                            WriteOpenBracket();
+
+                            // Indent
+                            Indent++;
+
+                            // Write The Class For This File
+                            WriteClass(dataTable);
+                            
+                            // Write Blank Line
+                            WriteLine();
+
+                            // Decrease Indent
+                            Indent--;
+
+                            // Write CloseBracket
+                            WriteCloseBracket();
+
+                            // Close The File
+                            this.CloseFile();
+                        }
+                    }
+                }
 
 				// Return True
 				return true;
@@ -2015,13 +1933,6 @@ namespace DataJuggler.Net
 						// Write This Line
 						WriteLine(sb.ToString());
 					}
-				}
-
-				// If This table Has A Primary Key and not a view
-				if ((table.HasPrimaryKey) && (!table.IsView))
-				{
-					// Write Line
-					WriteLine("private bool delete;");
 				}
 			}
 			#endregion
@@ -2099,72 +2010,6 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
-
-            #region WriteEachClassToSeperateFile(DataManager dataManager)
-            /// <summary>
-            /// This method writes each class to a seperate file
-            /// </summary>
-            /// <param name="dataManager"></param>
-            private void WriteEachClassToSeperateFile(DataManager dataManager)
-            {
-                // Write the classes for every table in all databases
-                foreach(Database db in dataManager.Databases)
-                {
-                    // now write classes for each table in this database
-                    // Update for DataTier.Net - Now only Active tables are written (Exclude = false, which is every field by default)
-                    foreach(DataTable dataTable in db.ActiveTables)
-                    {
-                        // must set the ObjectLibraryNameSpace for each table here
-                        dataTable.ObjectNameSpaceName = dataManager.NamespaceName;
-                    
-                        // Create File
-                        string fileName = GetClassFileName(dataTable);
-                        string fullPath = dataManager.ReturnFullPath(fileName);
-
-                        // if this is not the business object pass
-                        // or if the file exists do not write the file
-                        // Existing BusinessObject Classes are not overwritten
-                        // so you can modify the code. If there are any new tables
-                        // this will create a business object
-                        if ((!this.BusinessObjectPass) || (!System.IO.File.Exists(fullPath)))
-                        {
-                            // Create File
-                            this.CreateFile(fullPath, DataManager.ProjectTypeEnum.ObjectLibrary);
-
-                            // Write References
-                            this.WriteReferences(dataManager.References);
-
-                            // Write Blank Line & NameSpace
-                            WriteLine();
-
-                            // Write NameSpace
-                            WriteNamespace(dataManager.NamespaceName);
-
-                            // Write OpenBracket
-                            WriteOpenBracket();
-
-                            // Indent
-                            Indent++;
-
-                            // Write The Class For This File
-                            WriteClass(dataTable);
-                            
-                            // Write Blank Line
-                            WriteLine();
-
-                            // Decrease Indent
-                            Indent--;
-
-                            // Write CloseBracket
-                            WriteCloseBracket();
-
-                            // Close The File
-                            this.CloseFile();
-                        }
-                    }
-                }
-            }
-            #endregion
 
 			#region WriteExportToDataRowMethod(DataJuggler.Net.DataRow dataTable)
 			private void WriteExportToDataRowMethod(DataJuggler.Net.DataTable dataTable)
@@ -2292,60 +2137,6 @@ namespace DataJuggler.Net
 				// Write End Region
 				EndRegion();
 
-			}
-			#endregion
-
-			#region WriteFieldChangesGet(DataField field, DataTable table)
-			public void WriteFieldChangesGet(DataJuggler.Net.DataField Field,DataJuggler.Net.DataTable table)
-			{
-				// If field Is Supported
-				if(DataManager.IsSupported(Field.DataType))
-				{
-					// Write Blank Line
-					WriteLine();
-					
-					// string for new objectname
-					string newobjectname = NewObjectName(GetClassName(table),false,"Initial",false);
-					
-					// Write Comment For This field
-					StringBuilder sb = new StringBuilder("If ");
-					sb.Append(Field.FieldName);
-					sb.Append(" Changed");
-					WriteComment(sb.ToString());
-
-					// Now Created Comparison Line
-					sb = new StringBuilder();
-					sb.Append("if(");
-					sb.Append("this.");
-					sb.Append(Field.FieldName);
-					sb.Append(" != ");
-					sb.Append(newobjectname);
-					sb.Append(".");
-					sb.Append(Field.FieldName);
-					sb.Append(")");
-					WriteLine(sb.ToString());
-
-					// Write Open Bracket {
-					WriteOpenBracket();
-
-					// Increase Indent
-					Indent++;
-
-					// Write Comment
-					sb = new StringBuilder(Field.FieldName);
-					sb.Append(" Changed");
-					WriteComment(sb.ToString());
-
-					// Write Return True
-					WriteLine("return true;");
-
-					// Decrease Indent
-					Indent--;
-
-					// Write Close Bracket }
-					WriteCloseBracket();
-
-				}
 			}
 			#endregion
 
@@ -2545,6 +2336,95 @@ namespace DataJuggler.Net
 				WriteLine();
 			}
 			#endregion
+
+            #region WriteHasCallbackProperty()
+            /// <summary>
+            /// This method writes out a read only property Hascallback
+            /// </summary>
+            public void WriteHasCallbackProperty()
+            {
+                 // locals
+                string propertyLine = null;
+                string regionLine = null;
+                string getText = null;
+
+                // Create DataField
+                DataField field = new DataField();
+
+                // Set fieldName
+                field.FieldName = "HasCallback";
+
+                // Set field Properties
+                field.DataType = DataManager.DataTypeEnum.Boolean;
+
+                // Write A NewLine
+                WriteLine();
+
+                // increment Indent
+                Indent++;
+
+                // Start A New Region For This PropertyLine
+                regionLine = GetRegionLine(field);
+                BeginRegion(regionLine);
+
+                // Get PropertyLineText
+                propertyLine = GetPropertyLine(field);
+
+                // Write The PropertyLine
+                WriteLine(propertyLine);
+
+                // Write An OpenBracket
+                WriteOpenBracket();
+
+                // Increment Indent
+                Indent++;
+
+                // Write The Word Get
+                WriteLine("get");
+
+                // Write An OpenBracket
+                WriteOpenBracket();
+
+                // Increment Indent
+                Indent++;
+
+                // Write Comment
+                WriteComment("Initial Value");
+                
+                // Write Get Code Now
+                getText = "bool hasCallback = (this.Callback != null);";
+                    
+                // write out the getText
+                WriteLine(getText);
+
+                // Write A NewLine
+                WriteLine();
+                    
+                // Write Comment Return Value
+                WriteComment("return value");
+                    
+                // WriteLine return isNew
+                WriteLine("return hasCallback;");
+
+                // Decrement Indent
+                Indent--;
+
+                // Write A CloseBracket
+                WriteCloseBracket();
+                    
+                // Decrement Indent
+                Indent--;
+
+                // Write A CloseBracket
+                WriteCloseBracket();
+
+                // EndRegion
+                EndRegion();
+
+                // decrement Indent
+                Indent--;                
+            }
+            #endregion
 			
 			#region WriteIndexProperty(string className)
 			private void WriteIndexProperty(string className)
@@ -3197,6 +3077,13 @@ namespace DataJuggler.Net
 				{
 				    // Write DataClassVariables
 				    WriteDataClassVariables(table);
+
+                    // If the value for the property table.CreateBindingCallback is true
+                    if (table.CreateBindingCallback)
+                    {
+                        // Write ItemChanged Callback Private 
+                        WriteCallbackPrivateVariable();
+                    }
 			    }
 
 				// Write EndRegion DataClassVariables
@@ -3214,27 +3101,28 @@ namespace DataJuggler.Net
 				if(!BusinessObjectPass)
 				{
 				    // Write Each Property
-				    foreach(DataField Field in table.ActiveFields)
+				    foreach(DataField field in table.ActiveFields)
 				    {
 					    // If this field should have a property created
-                        if((!Field.Exclude) && (Field.DataType != DataManager.DataTypeEnum.NotSupported))
+                        if((!field.Exclude) && (field.DataType != DataManager.DataTypeEnum.NotSupported))
 					    {
-						    // Write this property
-                            WriteProperty(Field);
+                            // If the value for the property table.CreateBindingCallback is true and this field is not a PrimaryKey
+                            if ((table.CreateBindingCallback) && (!field.PrimaryKey))
+                            {
+                                // Write out a property with a callback
+						        WritePropertyWithCallback(field);
+                            }
+                            else
+                            {
+                                // Write this property
+                                WriteProperty(field);
+                            }
 					    }
 				    }
 
 				    // Write Property For Delete If This table Has A Primary Key and this table is not a view
 				    if ((table.HasPrimaryKey) && (!table.IsView))
 				    {
-					    // Create field For Delete
-					    DataJuggler.Net.DataField DelField = new DataField();
-					    DelField.FieldName = "Delete";
-					    DelField.DataType = DataManager.DataTypeEnum.Boolean;
-					    DelField.AccessMode = DataManager.AccessMode.ReadWrite;
-					    DelField.Scope = DataManager.Scope.Public;
-					    WriteProperty(DelField);
-
                         // if this is an Identity column
                         if (table.PrimaryKey.DataType == DataManager.DataTypeEnum.Autonumber)
                         {
@@ -3242,6 +3130,16 @@ namespace DataJuggler.Net
 					        WriteIsNewProperty(table);
                         }
 				    }
+
+                    // If the value for the property table.CreateBindingCallback is true
+                    if (table.CreateBindingCallback)
+                    {
+                        // Write ItemChanged Callback Private 
+                        WriteCallbackProperty();
+
+                        // Write out the readonly property HasCallback
+                        WriteHasCallbackProperty();
+                    }
 
                     // Write Empty Blank Line
                     WriteLine();	
@@ -3437,6 +3335,121 @@ namespace DataJuggler.Net
 
 			#endregion
 
+            #region WritePropertyWithCallback(DataField field) void 
+            /// <summary>
+            /// This method writes out a property, and if a Callback exists and there are changes,
+            /// the Callback will be called if a value is different.
+            /// </summary>
+            /// <param name="field"></param>
+			private void WritePropertyWithCallback(DataField field)
+			{
+				// locals
+				string propertyLine = null;
+				string regionLine = null;
+
+				// Write A NewLine
+				WriteLine();
+
+				// increment Indent
+				Indent++;
+
+				// Start A New Region For This PropertyLine
+                regionLine = GetRegionLine(field);
+				BeginRegion(regionLine);
+
+				// Get PropertyLineText
+                propertyLine = GetPropertyLine(field);
+
+				// Write The PropertyLine
+				WriteLine(propertyLine);
+
+				// Write An OpenBracket
+				WriteOpenBracket(true);
+
+				// If ReadOnly or ReadWrite 
+                if (WriteGet(field))
+				{			
+					// Write The Word Get
+					WriteLine("get");
+
+					// Write An OpenBracket
+					WriteOpenBracket(true);
+
+					// Write Get Code Now
+                    string GetText = CreateGetText(field);
+					WriteLine(GetText);
+
+					// Write A CloseBracket
+					WriteCloseBracket(true);
+				}
+
+				// If ReadWrite or WriteOnly
+                if (WriteSet(field))
+				{
+					// Write The Word set
+					WriteLine("set");
+
+					// Write An OpenBracket
+					WriteOpenBracket(true);
+
+                    // Write out a comment
+                    WriteComment("local");
+
+                    // create a line that checks if the new value being set is different than the current value
+                    string hasChangesLine = "bool hasChanges = (" + field.FieldName + " != value);";
+
+                    // Write out this line
+                    WriteLine(hasChangesLine);
+
+                    // Write a blank line
+                    WriteLine();
+
+                    // Write comment
+                    WriteComment("Set the value");
+
+					// Write Get Code Now
+                    string SetText = CreateSetText(field);
+					WriteLine(SetText);
+
+                    // write a blank line
+                    WriteLine();
+
+                    // write out a comment
+                    WriteComment("if the Callback exists and changes occurred");
+
+                    // Create a line testing for if the Callback exists and if Changes occurred
+                    string ifCallbackAndChanges = "if ((HasCallback) && (hasChanges))";
+
+                    // Write out the test
+                    WriteLine(ifCallbackAndChanges);
+
+                    // Write an open bracket
+                    WriteOpenBracket(true);
+
+                    // Write out a comment
+                    WriteComment("Notify the Callback changes have occurred");
+
+                    // Write out the call to the Callback
+                   WriteLine("Callback(this, ChangeTypeEnum.ItemChanged);");
+
+                    // Write a close bracket
+                    WriteCloseBracket(true);
+
+					// Write A CloseBracket
+					WriteCloseBracket(true);
+				}
+
+				// Write A CloseBracket
+				WriteCloseBracket(true);
+
+				// EndRegion
+				EndRegion();
+
+				// decrement Indent
+				Indent--;	
+			}
+			#endregion
+
 			#region WriteReference(Reference Ref) void
 			public void WriteReference(Reference Ref)
 			{
@@ -3452,9 +3465,14 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region WriteReferences(ReferencesSet References)
-			public void WriteReferences(ReferencesSet references)
+			#region WriteReferences(ReferencesSet References, bool requireDelegatesReference = false)
+			public void WriteReferences(ReferencesSet references, bool requireDelegatesReference = false)
 			{
+                // locals
+                bool hasDelegateReference = false;
+                bool hasEnumerationsReference = false;
+                Reference referenceObject = null;
+
                 try
                 {
                     // Write Blank Line
@@ -3470,13 +3488,44 @@ namespace DataJuggler.Net
                     WriteLine();
 
                     // Write Each References
-                    foreach (Reference refObject in references)
+                    foreach (Reference reference in references)
+                    {  
+                        // Write This References
+                        WriteReference(reference);
+
+                        // if this reference name equals DataJuggler.Net.Core.Delegates
+                        if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReference)))
+                        {
+                            // set to true
+                            hasDelegateReference = true;
+                        }
+
+                        // if this reference name equals DataJuggler.Net.Core.Enumerations
+                        if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReference)))
+                        {
+                            // set to true
+                            hasEnumerationsReference = true;
+                        }
+                    }
+
+                    // If the DelegateReference was not found
+                    if ((requireDelegatesReference) && (!hasDelegateReference))
                     {
-                        //if(!this.BusinessObjectPass)
-                        //{
-                            // Write This References
-                            WriteReference(refObject);
-                        //}
+                        // create a reference
+                        referenceObject = new Reference(DelegatesReference, 0);
+
+                        // write out the reference for DataJuggler.Net.Core.Delegates
+                        WriteReference(referenceObject);
+                    }
+
+                    // If the EnumerationsReference was not found
+                    if ((requireDelegatesReference) && (!hasEnumerationsReference))
+                    {
+                        // Create a new instance of a 'Reference' object.
+                        referenceObject = new Reference(EnumerationsReference, 0);
+
+                        // write out the reference for DataJuggler.Net.Core.Enumerations
+                        WriteReference(referenceObject);
                     }
 
                     // Write Blank Line
@@ -3629,40 +3678,39 @@ namespace DataJuggler.Net
             #endregion
 
 			#region WriteSet(DataField field) bool
+            /// <summary>
+            /// This method has a bad name. This is really ShouldSetBeWritten?
+            /// The name implies the setter is written.
+            /// </summary>
+            /// <param name="field"></param>
+            /// <returns></returns>
 			private bool WriteSet(DataField field)
 			{
+                // initial value
+                bool writeSet = false;
+
+                // if WriteOnly or ReadWrite
                 if (field.AccessMode == DataManager.AccessMode.WriteOnly)
 				{
-					return true;
+                    // set the return value to true
+					writeSet = true;
 				}
-
-                if (field.AccessMode == DataManager.AccessMode.ReadWrite)
+                else if (field.AccessMode == DataManager.AccessMode.ReadWrite)
 				{
-					return true;
+					// set the return value
+					writeSet = true;
 				}
+                else
+                {
+                    // break point only
+                    writeSet = false;
+                }
 
-				// Else Return False
-				return false;
-
+				// return value
+				return writeSet;
 			}
 			#endregion
 			
-			#region WriteTableProperty()
-			public void WriteTableProperty()
-			{
-				// Create field For table
-				DataJuggler.Net.DataField field = new DataField();
-				field.FieldName = "table";
-				field.DataType = DataManager.DataTypeEnum.DataTable;
-				field.AccessMode = DataManager.AccessMode.ReadWrite;
-				field.Scope = DataManager.Scope.Public;
-				WriteProperty(field);
-
-				// Write Blank Line
-				WriteLine();				
-			}
-			#endregion 
-
             #region WriteUpdateIdentityMethod(DataTable table)
             /// <summary>
             /// This method is used to update the Identity column for this table.
