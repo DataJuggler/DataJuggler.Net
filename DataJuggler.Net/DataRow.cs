@@ -17,7 +17,8 @@ namespace DataJuggler.Net
 		private bool delete;
 		private List<DataField> fields;
 		private int index;
-		private DataJuggler.Net.DataTable parenttable;
+		private DataJuggler.Net.DataTable parentTable;
+		private string tag;
 		#endregion
 
 		#region Constructor
@@ -368,11 +369,11 @@ namespace DataJuggler.Net
 				// Return NoField
 				return NoField;
 			}
-			#endregion
+        #endregion
 
-		#endregion
-		
-		#region Properties
+        #endregion
+
+        #region Properties
 
 			#region Changes
 			public bool Changes
@@ -456,14 +457,25 @@ namespace DataJuggler.Net
 			{
 				get
 				{
-					return parenttable;
+					return parentTable;
 				}
 				set
 				{
-					parenttable = value;
+					parentTable = value;
 				}
 			}
 			#endregion
+
+			#region Tag
+            /// <summary>
+            /// This property gets or sets the value for 'Tag'.
+            /// </summary>
+            public string Tag
+            {
+                get { return tag; }
+                set { tag = value; }
+            }
+            #endregion
 
 		#endregion
 

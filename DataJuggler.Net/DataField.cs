@@ -20,6 +20,7 @@ namespace DataJuggler.Net
 
 		#region Private Variables
 		private DataManager.AccessMode accessmode;
+		private string tag;
 		private string caption;
 		private bool changes;
         private DataManager.DataTypeEnum datatype;
@@ -783,6 +784,17 @@ namespace DataJuggler.Net
 				}
 			}
 	        #endregion
+
+			#region Tag
+            /// <summary>
+            /// This property gets or sets the value for 'Tag'.
+            /// </summary>
+            public string Tag
+            {
+                get { return tag; }
+                set { tag = value; }
+            }
+            #endregion
 
             #region TreatIntegerAsBoolean
             /// <summary>

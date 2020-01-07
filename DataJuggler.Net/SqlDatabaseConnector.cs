@@ -10,6 +10,7 @@ using System.Data;
 using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
+using DataJuggler.Net.Xml.Writers;
 
 #endregion
 
@@ -633,7 +634,7 @@ namespace DataJuggler.Net
 			public string GetDatabaseSchemaHash(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
 			{  
                 // initial value
-                string schemaHash = "";
+                string schemaHash = "Error: Database Not Found";
 
                 // local
                 int schemaValue = 0;
@@ -644,44 +645,55 @@ namespace DataJuggler.Net
                 // If the database object exists
                 if (NullHelper.Exists(database))
                 {
-                    // if the Tables collection exists and has one or more items
-                    if (ListHelper.HasOneOrMoreItems(database.Tables))
+                    // Create a new instance of a 'DatabasesWriter' object.
+                    DatabasesWriter writer = new DatabasesWriter();
+
+                    // export the database to xml
+                    string xml = writer.ExportDatabase(database);
+
+                    // if the xml was found
+                    if (TextHelper.Exists(xml))
                     {
-                        // iterate the tables
-                        foreach (DataTable table in database.Tables)
-                        {
-                            // Add the value of this table Name
-                            schemaValue += GetTextValue(table.Name);
+                        // get an integer value for this xml
+                        schemaValue = GetTextValue(xml);
 
-                            // if the table has fields
-                            if (ListHelper.HasOneOrMoreItems(table.Fields))
-                            {
-                                // iterate the fields
-                                foreach (DataField field in table.Fields)
-                                {
-                                    // Add the value of this field Name
-                                    schemaValue += GetTextValue(field.FieldName);
-
-                                    // Add the value of this field DBDataType
-                                    schemaValue += GetTextValue(field.DBDataType);
-                                }
-                            }
-                        }
-                    }
-
-                    // if the schemaValue has been calculated
-                    if (schemaValue > 0)
-                    {
-                        // convert to a number
-                        string temp = schemaValue.ToString();
-
-                        // encrypt the string 
-                        schemaHash = CryptographyHelper.EncryptString(temp);
+                        // Convert the numeric value to a string, then encrypt
+                        schemaHash = CryptographyHelper.EncryptString(schemaValue.ToString());
                     }
                 }
 
 				// Return Database
 				return schemaHash;
+			}
+			#endregion
+
+            #region GetDatabaseSchemaXml(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
+			/// <summary>
+			/// Loads The Database Schema For The Database and returns a hashed value representing the current schema
+			/// </summary>
+			/// <param name="database"></param>
+			/// <param name="ConnectionString"></param>
+			/// <returns></return>
+			public string GetDatabaseSchemaXml(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
+			{  
+                // initial value
+                string xml = "Error: Database Not Found";
+
+			    // call the method to load the schema
+				database = LoadDatabaseSchema(database, ignoreDataSync, ignoreAzureFirewallRules);
+
+                // If the database object exists
+                if (NullHelper.Exists(database))
+                {
+                    // Create a new instance of a 'DatabasesWriter' object.
+                    DatabasesWriter writer = new DatabasesWriter();
+
+                    // export the database to xml
+                    xml = writer.ExportDatabase(database);
+                }
+
+				// Return Database
+				return xml;
 			}
 			#endregion
 

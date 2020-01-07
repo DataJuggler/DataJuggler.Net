@@ -37,6 +37,7 @@ namespace DataJuggler.Net
         private List<ForeignKeyConstraint> foreignKeys;
         private bool createBindingCallback;
         private string schemaName;
+        private string tag;
 		#endregion
 
  		#region Constructor +1 override
@@ -368,12 +369,12 @@ namespace DataJuggler.Net
             {
                 // return the name of the table.
                 return this.Name;
-            } 
-            #endregion
-			
-		#endregion
-		
-		#region Properties
+            }
+        #endregion
+
+        #endregion
+
+        #region Properties
 
             #region ActiveFields
             /// <summary>
@@ -848,6 +849,17 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
+
+            #region Tag
+            /// <summary>
+            /// This property gets or sets the value for 'Tag'.
+            /// </summary>
+            public string Tag
+            {
+                get { return tag; }
+                set { tag = value; }
+            }
+            #endregion
 
 			#region xmlFileName
 			public string XmlFileName
