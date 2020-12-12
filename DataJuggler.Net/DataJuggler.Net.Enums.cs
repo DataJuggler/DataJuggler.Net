@@ -17,7 +17,7 @@ namespace DataJuggler.Net.Enumerations
     }
     #endregion
 
-    #region Enum IndexTypeEnum
+    #region enum IndexTypeEnum
     /// <summary>
     /// This enumeration is the types of stored procedures
     /// </summary>
@@ -34,19 +34,6 @@ namespace DataJuggler.Net.Enumerations
     }
     #endregion
 
-	#region Enum StoredProcedureTypes
-	public enum StoredProcedureTypes : int
-	{
-		NotSet = 0,
-		Delete = 10, 
-        Select = 20,
-        FetchAll = 21,
-		Find = 22,
-		Insert = 30,
-		Update = 40
-	}
-    #endregion
-
     #region enum SqlConnectionOwnership
     /// <summary>
     /// This enum is used to indicate whether the connection was provided by the caller, or created by SqlHelper, so that
@@ -59,6 +46,19 @@ namespace DataJuggler.Net.Enumerations
         /// <summary>Connection is owned and managed by the caller</summary>
         External
     }
+    #endregion
+
+	#region enum StoredProcedureTypes
+	public enum StoredProcedureTypes : int
+	{
+		NotSet = 0,
+		Delete = 10, 
+        Select = 20,
+        FetchAll = 21,
+		Find = 22,
+		Insert = 30,
+		Update = 40
+	}
     #endregion
 
 }

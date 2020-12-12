@@ -283,7 +283,7 @@ namespace DataJuggler.Net.Connection
                     this.ConnectionInfo = new ConnectionInfo();
 
                     // Set the ConnectionString
-                    this.ConnectionInfo.ConnectionString = ConfigurationHelper.ReadAppSetting("ConnectionString", UseEncryption, EncryptionKey);
+                    this.ConnectionInfo.ConnectionString = ConfigurationHelper.ReadAppSetting("ConnectionString");
 
                     // if the connection string does not exist
                     if (!this.ConnectionInfo.HasConnectionString)
@@ -292,22 +292,22 @@ namespace DataJuggler.Net.Connection
                         // is a connectionstring
 
                         // Set the DatabaseServer
-                        this.ConnectionInfo.DatabaseServer = ConfigurationHelper.ReadAppSetting("DatabaseServer", UseEncryption, EncryptionKey); 
+                        this.ConnectionInfo.DatabaseServer = ConfigurationHelper.ReadAppSetting("DatabaseServer"); 
 
                         // Read the app setting for the database name
-                        this.ConnectionInfo.DatabaseName = ConfigurationHelper.ReadAppSetting("DatabaseName", UseEncryption, EncryptionKey); 
+                        this.ConnectionInfo.DatabaseName = ConfigurationHelper.ReadAppSetting("DatabaseName"); 
 
                         // Set the value for integrated security
-                        this.ConnectionInfo.IntegratedSecurity = BooleanHelper.ParseBoolean(ConfigurationHelper.ReadAppSetting("IntegratedSecurity", UseEncryption, EncryptionKey), false, false);
+                        this.ConnectionInfo.IntegratedSecurity = BooleanHelper.ParseBoolean(ConfigurationHelper.ReadAppSetting("IntegratedSecurity"), false, false);
 
                         // if integrated security is true
                         if (!this.ConnectionInfo.IntegratedSecurity)
                         {
                             // Set the DatabaseUserName
-                            this.ConnectionInfo.DatabaseUserName = ConfigurationHelper.ReadAppSetting("DatabaseUserName", UseEncryption, EncryptionKey);
+                            this.ConnectionInfo.DatabaseUserName = ConfigurationHelper.ReadAppSetting("DatabaseUserName");
 
                             // Set the DatabasePassword 
-                            this.ConnectionInfo.DatabasePassword = ConfigurationHelper.ReadAppSetting("DatabasePassword", UseEncryption, EncryptionKey);
+                            this.ConnectionInfo.DatabasePassword = ConfigurationHelper.ReadAppSetting("DatabasePassword");
                         }
                     }
 

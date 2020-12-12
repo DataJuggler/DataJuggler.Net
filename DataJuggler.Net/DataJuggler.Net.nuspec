@@ -16,7 +16,7 @@
     <copyright>Copyright 2019</copyright>
     <tags>DataJuggler DataJuggler.Net</tags>
     <dependencies>
-      <dependency id="DataJuggler.Core.UltimateHelper" version="1.3.11" include="contentFiles, build" />
+      <dependency id="DataJuggler.Core.UltimateHelper" version="1.5" include="contentFiles, build" />
       <dependency id="System.Data.SqlClient" version="4.8.0" />
     </dependencies>
   </metadata>

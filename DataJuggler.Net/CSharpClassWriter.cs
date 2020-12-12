@@ -33,8 +33,11 @@ namespace DataJuggler.Net
         private ProjectFileManager fileManager;
         private bool textWriterMode;
         private StringBuilder textWriter;
-        private const string DelegatesReference = "DataJuggler.Net.Core.Delegates";
-        private const string EnumerationsReference = "DataJuggler.Net.Core.Enumerations";
+		private bool dotNet5Project;
+		private const string DelegatesReferenceNetFramework = "DataJuggler.Net.Delegates";
+        private const string EnumerationsReferenceNetFramework = "DataJuggler.Net.Enumerations";
+		private const string DelegatesReferenceNet5 = "DataJuggler.Net5.Delegates";
+        private const string EnumerationsReferenceNet5 = "DataJuggler.Net5.Enumerations";
         #endregion
 		
 		#region Constructor
@@ -48,7 +51,7 @@ namespace DataJuggler.Net
         /// This is for the .business.cs
         /// </param>
         /// <param name="textWriterMode">Set this to true to create a StringBuilder instead of a StreamWriter.</param>
-		public CSharpClassWriter(ProjectFileManager fileManager, bool businessObjectPassArg, bool textWriterMode = false)
+		public CSharpClassWriter(ProjectFileManager fileManager, bool businessObjectPassArg, bool textWriterMode = false, bool dotNet5Project = false)
 		{
 		    // set the FileManager 
 		    this.FileManager = fileManager;
@@ -58,6 +61,9 @@ namespace DataJuggler.Net
 
             // store the arg for TextWriterMode
             this.TextWriterMode = textWriterMode;
+
+			// store the arg
+			this.DotNet5Project = dotNet5Project;
 
             // if the value for TextWriterMode is true
             if (TextWriterMode)
@@ -1540,7 +1546,7 @@ namespace DataJuggler.Net
                 if (collectionClass)
                 {
                     // Add the world Collection to the newObjectName
-                    newobjectname = newobjectname + "Collection";
+                    newobjectname += "Collection";
                 }
 
 				// Write Comment Create New Object
@@ -3465,7 +3471,7 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region WriteReferences(ReferencesSet References, bool requireDelegatesReference = false)
+			#region WriteReferences(ReferencesSet references, bool requireDelegatesReference = false)
 			public void WriteReferences(ReferencesSet references, bool requireDelegatesReference = false)
 			{
                 // locals
@@ -3493,38 +3499,90 @@ namespace DataJuggler.Net
                         // Write This References
                         WriteReference(reference);
 
-                        // if this reference name equals DataJuggler.Net.Core.Delegates
-                        if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReference)))
-                        {
-                            // set to true
-                            hasDelegateReference = true;
-                        }
+						// if the value for dotNet5Project is true
+						if (dotNet5Project)
+						{
+							// if this reference name equals DataJuggler.Net5.Delegates
+							if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet5)))
+							{
+								// set to true
+								hasDelegateReference = true;
+							}
+						}
+						else
+						{
+							// if this reference name equals DataJuggler.Net.Delegates
+							if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNetFramework)))
+							{
+								// set to true
+								hasDelegateReference = true;
+							}
+						}
 
-                        // if this reference name equals DataJuggler.Net.Core.Enumerations
-                        if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReference)))
-                        {
-                            // set to true
-                            hasEnumerationsReference = true;
-                        }
+						// if the value for dotNet5Project is true
+						if (dotNet5Project)
+						{
+							// if this reference name equals DataJuggler.Net5.Enumerations
+							if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNet5)))
+							{
+								// set to true
+								hasEnumerationsReference = true;
+							}
+						}
+						else
+						{
+							// .Net Framework
+
+							// if this reference name equals DataJuggler.Net.Enumerations
+							if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNetFramework)))
+							{
+								// set to true
+								hasEnumerationsReference = true;
+							}
+						}
                     }
 
                     // If the DelegateReference was not found
                     if ((requireDelegatesReference) && (!hasDelegateReference))
                     {
-                        // create a reference
-                        referenceObject = new Reference(DelegatesReference, 0);
+						// if the value for dotNet5Project is true
+						if (dotNet5Project)
+						{
+							// .Net5
 
-                        // write out the reference for DataJuggler.Net.Core.Delegates
+							// create a reference
+							referenceObject = new Reference(DelegatesReferenceNet5, 0);
+						}
+						else
+						{
+							// .Net Framework
+
+							// create a reference
+							referenceObject = new Reference(DelegatesReferenceNetFramework, 0);
+						}
+
+                        // write out the reference for DataJuggler.Net5.Delegates
                         WriteReference(referenceObject);
                     }
 
                     // If the EnumerationsReference was not found
-                    if ((requireDelegatesReference) && (!hasEnumerationsReference))
+                    if (!hasEnumerationsReference)
                     {
-                        // Create a new instance of a 'Reference' object.
-                        referenceObject = new Reference(EnumerationsReference, 0);
+						// if the value for dotNet5Project is true
+						if (dotNet5Project)
+						{
+							// Create a new instance of a 'Reference' object.
+							referenceObject = new Reference(EnumerationsReferenceNet5, 0);
+						}
+						else
+						{
+							// .Net Framework
 
-                        // write out the reference for DataJuggler.Net.Core.Enumerations
+							// Create a new instance of a 'Reference' object.
+							referenceObject = new Reference(EnumerationsReferenceNetFramework, 0);
+						}
+
+                        // write out the reference for DataJuggler.Net5.Enumerations
                         WriteReference(referenceObject);
                     }
 
@@ -3821,6 +3879,20 @@ namespace DataJuggler.Net
 				set
 				{
 					createtablefromxml = value;
+				}
+			}
+			#endregion
+
+			#region	 DotNet5Project
+			public bool DotNet5Project
+			{
+				get
+				{
+					return dotNet5Project;
+				}
+				set
+				{
+					dotNet5Project = value;
 				}
 			}
 			#endregion

@@ -11,6 +11,7 @@ using System.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using DataJuggler.Net.Xml.Writers;
+using DataJuggler.Net.Cryptography;
 
 #endregion
 
