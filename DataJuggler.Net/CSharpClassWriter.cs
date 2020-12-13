@@ -34,6 +34,8 @@ namespace DataJuggler.Net
         private bool textWriterMode;
         private StringBuilder textWriter;
 		private bool dotNet5Project;
+		private const string DataJugglerNetFramework = "DataJuggler.Net";
+		private const string DataJugglerNet5 = "DataJuggler.Net5";
 		private const string DelegatesReferenceNetFramework = "DataJuggler.Net.Delegates";
         private const string EnumerationsReferenceNetFramework = "DataJuggler.Net.Enumerations";
 		private const string DelegatesReferenceNet5 = "DataJuggler.Net5.Delegates";
@@ -3456,17 +3458,17 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region WriteReference(Reference Ref) void
-			public void WriteReference(Reference Ref)
+			#region WriteReference(Reference reference) void
+			public void WriteReference(Reference reference)
 			{
 				// local
-				string Line = null;
+				string line = null;
 
 				// Get ReferenceLine
-				Line = GetReferenceLine(Ref);
+				line = GetReferenceLine(reference);
 
 				// Write The PropertyLine
-				WriteLine(Line);
+				WriteLine(line);
 
 			}
 			#endregion
@@ -3495,7 +3497,22 @@ namespace DataJuggler.Net
 
                     // Write Each References
                     foreach (Reference reference in references)
-                    {  
+                    { 
+						// if the reference is wrong
+						if (dotNet5Project)
+						{
+							if (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNetFramework))
+							{
+								// Change to DataJuggler.Net5
+								reference.ReferenceName = DataJugglerNet5;
+							}
+						}
+						else if ((!dotNet5Project) && (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNet5)))
+						{
+							// Change to DataJuggler.Net5
+							reference.ReferenceName = DataJugglerNetFramework;
+						}
+
                         // Write This References
                         WriteReference(reference);
 
