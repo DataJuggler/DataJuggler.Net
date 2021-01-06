@@ -36,8 +36,7 @@ namespace DataJuggler.Net
 		private bool dotNet5Project;
 		private const string DataJugglerNetFramework = "DataJuggler.Net";
 		private const string DataJugglerNet5 = "DataJuggler.Net5";
-		private const string DelegatesReferenceNetFramework = "DataJuggler.Net.Delegates";
-        private const string EnumerationsReferenceNetFramework = "DataJuggler.Net.Enumerations";
+		private const string EnumerationsReferenceNetFramework = "DataJuggler.Net.Enumerations";
 		private const string DelegatesReferenceNet5 = "DataJuggler.Net5.Delegates";
         private const string EnumerationsReferenceNet5 = "DataJuggler.Net5.Enumerations";
         #endregion
@@ -3498,47 +3497,28 @@ namespace DataJuggler.Net
                     // Write Each References
                     foreach (Reference reference in references)
                     { 
-						// if the reference is wrong
-						if (dotNet5Project)
+						// if the value for requireDelegatesReference is true
+						if (requireDelegatesReference)
 						{
+							// fix an issue where some project types had the wrong field. Wanting to get rid of this and might soon.
 							if (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNetFramework))
 							{
 								// Change to DataJuggler.Net5
 								reference.ReferenceName = DataJugglerNet5;
+							}							
+							else if ((!dotNet5Project) && (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNet5)))
+							{
+								// Change to DataJuggler.Net5
+								reference.ReferenceName = DataJugglerNetFramework;
 							}
-						}
-						else if ((!dotNet5Project) && (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNet5)))
-						{
-							// Change to DataJuggler.Net5
-							reference.ReferenceName = DataJugglerNetFramework;
-						}
 
-                        // Write This References
-                        WriteReference(reference);
-
-						// if the value for dotNet5Project is true
-						if (dotNet5Project)
-						{
 							// if this reference name equals DataJuggler.Net5.Delegates
 							if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet5)))
 							{
 								// set to true
 								hasDelegateReference = true;
 							}
-						}
-						else
-						{
-							// if this reference name equals DataJuggler.Net.Delegates
-							if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNetFramework)))
-							{
-								// set to true
-								hasDelegateReference = true;
-							}
-						}
-
-						// if the value for dotNet5Project is true
-						if (dotNet5Project)
-						{
+						
 							// if this reference name equals DataJuggler.Net5.Enumerations
 							if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNet5)))
 							{
@@ -3546,61 +3526,39 @@ namespace DataJuggler.Net
 								hasEnumerationsReference = true;
 							}
 						}
-						else
-						{
-							// .Net Framework
 
-							// if this reference name equals DataJuggler.Net.Enumerations
-							if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNetFramework)))
-							{
-								// set to true
-								hasEnumerationsReference = true;
-							}
-						}
+                        // Write This References
+                        WriteReference(reference);
                     }
 
                     // If the DelegateReference was not found
-                    if ((requireDelegatesReference) && (!hasDelegateReference))
-                    {
-						// if the value for dotNet5Project is true
-						if (dotNet5Project)
-						{
-							// .Net5
+                    if (requireDelegatesReference)
+                    {	
+						// .Net5 Only
 
+						// if the value for hasDelegateReference is false
+						if (!hasDelegateReference)
+						{
 							// create a reference
 							referenceObject = new Reference(DelegatesReferenceNet5, 0);
+
+							// write out the reference for DataJuggler.Net5.Delegates
+							WriteReference(referenceObject);
 						}
-						else
+
+						// If the EnumerationsReference was not found
+						if (!hasEnumerationsReference)
 						{
-							// .Net Framework
+							// if the value for dotNet5Project is true
+							if (dotNet5Project)
+							{
+								// Create a new instance of a 'Reference' object.
+								referenceObject = new Reference(EnumerationsReferenceNet5, 0);
+							}
 
-							// create a reference
-							referenceObject = new Reference(DelegatesReferenceNetFramework, 0);
+							// write out the reference for DataJuggler.Net5.Enumerations
+							WriteReference(referenceObject);
 						}
-
-                        // write out the reference for DataJuggler.Net5.Delegates
-                        WriteReference(referenceObject);
-                    }
-
-                    // If the EnumerationsReference was not found
-                    if (!hasEnumerationsReference)
-                    {
-						// if the value for dotNet5Project is true
-						if (dotNet5Project)
-						{
-							// Create a new instance of a 'Reference' object.
-							referenceObject = new Reference(EnumerationsReferenceNet5, 0);
-						}
-						else
-						{
-							// .Net Framework
-
-							// Create a new instance of a 'Reference' object.
-							referenceObject = new Reference(EnumerationsReferenceNetFramework, 0);
-						}
-
-                        // write out the reference for DataJuggler.Net5.Enumerations
-                        WriteReference(referenceObject);
                     }
 
                     // Write Blank Line
