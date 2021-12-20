@@ -1,3 +1,10 @@
+Update Version 6.0.0: This project has been updated to version 6.0.0, 
+howerver it is still for .NET Framework 4.8. Use DataJuggler.Net5 or DataJuggler.Net6
+for newer projects.
+
+Note to self: Output of this folder needs to be copied to the lib folder. I am just doing it
+manually since I do not update this project often.
+
 Update for version 5.3.0:
 
 Oops! I accidently published and older version yesterday. This is the correct version. Anyone with a 
@@ -11,9 +18,11 @@ This version better handles tables that do not have an identity incremented inte
 Update for version 5.1.6: 
 The class Function was left out; it is part of DB Compare and used to compare SQL Server Functions.
 
-This file is part of RAD Studio Code Generation Toolkit
+This file was part of RAD Studio Code Generation Toolkit
 https://radstudio.codeplex.com/
+
 This project was formerly known as DataClassBuilder.Net which was the Predecessor to RAD Studio Code Generation Toolkit.
+
 SQLDatabase Connector
 This is a wrapper to the SQL Connection and also contains many methods used to read the database schema.
 Example Open Source Projects That Use The SQL Database Connector:
