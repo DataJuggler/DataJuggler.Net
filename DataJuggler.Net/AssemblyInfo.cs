@@ -8,11 +8,11 @@ using System.Runtime.InteropServices;
 // associated with an assembly.
 //
 [assembly: AssemblyTitle("DataJuggler.Net")]
-[assembly: AssemblyDescription("Advanced Code Generation For Microsoft Visual Studio.Net Developers")]
+[assembly: AssemblyDescription("Advanced Code Generation For Microsoft Visual Studio.Net Developers - Used in DataTier.Net and DBCompare.")]
 [assembly: AssemblyConfiguration("")]
 [assembly: AssemblyCompany("Data Juggler")]
 [assembly: AssemblyProduct("DataJuggler.Net")]
-[assembly: AssemblyCopyright("Copyright © Data Juggler 2006 - 2020 - Use As Is, Do What You Whatever You Want")]
+[assembly: AssemblyCopyright("Copyright © Data Juggler 2006 - 2022 - Use As Is, Do What You Whatever You Want")]
 [assembly: AssemblyTrademark("")]
 [assembly: AssemblyCulture("")]		
 
@@ -30,7 +30,7 @@ using System.Runtime.InteropServices;
 // 2.5 Bugs Release
 // This is the new release for DataTier.Net. 
 
-[assembly: AssemblyVersion("5.8.2.0")]
+[assembly: AssemblyVersion("6.0.0.0")]
 
 //
 // In order to sign your assembly you must specify a key to use. Refer to the 
@@ -60,6 +60,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDelaySign(false)]
 [assembly: AssemblyKeyFile("")]
 [assembly: AssemblyKeyName("")]
-[assembly: AssemblyFileVersion("5.8.2.0")]
+[assembly: AssemblyFileVersion("6.0.0.0")]
 [assembly: ComVisibleAttribute(false)]
 [assembly: GuidAttribute("3b819a70-d26f-4839-afbe-13710c698cb3")]

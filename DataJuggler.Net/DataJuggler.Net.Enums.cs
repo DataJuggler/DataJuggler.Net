@@ -61,4 +61,17 @@ namespace DataJuggler.Net.Enumerations
 	}
     #endregion
 
+    #region TargetFrameworkEnum : int
+    /// <summary>
+    /// This enum is used to help CSharpClassWriter keep track of refernces to add
+    /// and possibly other differences 
+    /// </summary>
+    public enum TargetFrameworkEnum : int
+    {  
+        NetFramework = 4,
+        Net5 = 5,
+        Net6 = 6
+    }
+    #endregion
+
 }

@@ -1,19 +1,18 @@
 <?xml version="1.0"?>
 <package >
   <metadata>
-    <id>$id$</id>
-    <version>$version$</version>
-    <title>$title$</title>
-    <authors>$author$</authors>
-    <owners>$author$</owners>
+    <id>DataJuggler.Net</id>
+    <version>6.0.0</version>
+    <title>DataJuggler.Net</title>
+    <authors>Data Juggler</authors>
+    <owners>Data Juggler</owners>
     <licenseUrl>https://github.com/DataJuggler/SharedRepo/tree/master/License</licenseUrl>
     <projectUrl>https://github.com/DataJuggler/DataJuggler.Net</projectUrl>
     <iconUrl>https://github.com/DataJuggler/SharedRepo/blob/master/Shared/Images/DataJuggler.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
-    <description>$description$</description>
-    <releaseNotes>This version is designed for .Net Framework projects, but will also work for Dot Net Core.
-    DataJuggler.Net.Core is recommended for Dot Net Core projects.</releaseNotes>
-    <copyright>Copyright 2019</copyright>
+    <description>Advanced code generation for C# developers. DataJuggler.Net reads SQL Server database schema, and powers DataTier.Net and DBCompare and other projects.</description>
+    <releaseNotes>This version is designed for .Net Framework projects. DataJuggler.Net6 is the latest version for .Net6 projects and DataJuggler.Net5 for .Net5 projects.</releaseNotes>
+    <copyright>Copyright 2006 - 2022</copyright>
     <tags>DataJuggler DataJuggler.Net</tags>
     <dependencies>
       <dependency id="DataJuggler.Core.UltimateHelper" version="1.5" include="contentFiles, build" />

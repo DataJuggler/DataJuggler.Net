@@ -7,6 +7,7 @@ using System;
 using System.IO;
 using System.Text;
 using System.Collections.Generic;
+using DataJuggler.Net.Enumerations;
 
 #endregion
 
@@ -33,12 +34,15 @@ namespace DataJuggler.Net
         private ProjectFileManager fileManager;
         private bool textWriterMode;
         private StringBuilder textWriter;
-		private bool dotNet5Project;
+		private TargetFrameworkEnum targetFramework;
 		private const string DataJugglerNetFramework = "DataJuggler.Net";
 		private const string DataJugglerNet5 = "DataJuggler.Net5";
+		private const string DataJugglerNet6 = "DataJuggler.Net6";
 		private const string EnumerationsReferenceNetFramework = "DataJuggler.Net.Enumerations";
 		private const string DelegatesReferenceNet5 = "DataJuggler.Net5.Delegates";
+		private const string DelegatesReferenceNet6 = "DataJuggler.Net6.Delegates";
         private const string EnumerationsReferenceNet5 = "DataJuggler.Net5.Enumerations";
+		private const string EnumerationsReferenceNet6 = "DataJuggler.Net6.Enumerations";
         #endregion
 		
 		#region Constructor
@@ -52,7 +56,7 @@ namespace DataJuggler.Net
         /// This is for the .business.cs
         /// </param>
         /// <param name="textWriterMode">Set this to true to create a StringBuilder instead of a StreamWriter.</param>
-		public CSharpClassWriter(ProjectFileManager fileManager, bool businessObjectPassArg, bool textWriterMode = false, bool dotNet5Project = false)
+		public CSharpClassWriter(ProjectFileManager fileManager, bool businessObjectPassArg, bool textWriterMode = false, TargetFrameworkEnum targetFramework = TargetFrameworkEnum.NetFramework)
 		{
 		    // set the FileManager 
 		    this.FileManager = fileManager;
@@ -64,7 +68,7 @@ namespace DataJuggler.Net
             this.TextWriterMode = textWriterMode;
 
 			// store the arg
-			this.DotNet5Project = dotNet5Project;
+			this.TargetFramework = targetFramework;
 
             // if the value for TextWriterMode is true
             if (TextWriterMode)
@@ -3506,7 +3510,7 @@ namespace DataJuggler.Net
 								// Change to DataJuggler.Net5
 								reference.ReferenceName = DataJugglerNet5;
 							}							
-							else if ((!dotNet5Project) && (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNet5)))
+							else if ((TargetFramework == TargetFrameworkEnum.NetFramework) && (TextHelper.IsEqual(reference.ReferenceName, DataJugglerNet5)))
 							{
 								// Change to DataJuggler.Net5
 								reference.ReferenceName = DataJugglerNetFramework;
@@ -3514,6 +3518,13 @@ namespace DataJuggler.Net
 
 							// if this reference name equals DataJuggler.Net5.Delegates
 							if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet5)))
+							{
+								// set to true
+								hasDelegateReference = true;
+							}
+
+							// if this reference name equals DataJuggler.Net5.Delegates
+							if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet6)))
 							{
 								// set to true
 								hasDelegateReference = true;
@@ -3534,7 +3545,7 @@ namespace DataJuggler.Net
                     // If the DelegateReference was not found
                     if (requireDelegatesReference)
                     {	
-						// .Net5 Only
+						// .Net5 or .Net 6 Only
 
 						// if the value for hasDelegateReference is false
 						if (!hasDelegateReference)
@@ -3542,7 +3553,7 @@ namespace DataJuggler.Net
 							// create a reference
 							referenceObject = new Reference(DelegatesReferenceNet5, 0);
 
-							// write out the reference for DataJuggler.Net5.Delegates
+							// write out the reference for DataJuggler.Net5.Delegates or DataJuggler.Net6.Delegates
 							WriteReference(referenceObject);
 						}
 
@@ -3550,7 +3561,7 @@ namespace DataJuggler.Net
 						if (!hasEnumerationsReference)
 						{
 							// if the value for dotNet5Project is true
-							if (dotNet5Project)
+							if (TargetFramework == TargetFrameworkEnum.Net5)
 							{
 								// Create a new instance of a 'Reference' object.
 								referenceObject = new Reference(EnumerationsReferenceNet5, 0);
@@ -3857,20 +3868,6 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
-
-			#region	 DotNet5Project
-			public bool DotNet5Project
-			{
-				get
-				{
-					return dotNet5Project;
-				}
-				set
-				{
-					dotNet5Project = value;
-				}
-			}
-			#endregion
             
 			#region Indent
 			public int Indent
@@ -3945,6 +3942,25 @@ namespace DataJuggler.Net
                 }
             }
             #endregion
+
+			#region TargetFramework
+			/// <summary>
+			/// This is the output project type.
+			/// </summary>
+			public TargetFrameworkEnum TargetFramework
+			{
+				get
+				{
+					// return value
+					return targetFramework;
+				}
+				set
+				{
+					// set the value
+					targetFramework = value;
+				}
+			}
+			#endregion
 			
             #region TextWriter
             /// <summary>
