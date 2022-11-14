@@ -2,7 +2,7 @@
 <package >
   <metadata>
     <id>DataJuggler.Net</id>
-    <version>6.0.5</version>
+    <version>6.1.0</version>
     <title>DataJuggler.Net</title>
     <authors>Data Juggler</authors>
     <owners>Data Juggler</owners>
@@ -11,11 +11,11 @@
     <iconUrl>https://github.com/DataJuggler/SharedRepo/blob/master/Shared/Images/DataJuggler.png</iconUrl>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <description>Advanced code generation for C# developers. DataJuggler.Net reads SQL Server database schema, and powers DataTier.Net and DBCompare and other projects.</description>
-    <releaseNotes>This version is designed for .Net Framework projects. DataJuggler.Net6 is the latest version for .Net6 projects and DataJuggler.Net5 for .Net5 projects.</releaseNotes>
+    <releaseNotes>This version is designed for .Net Framework projects. DataJuggler.Net7 is the latest version for .NET 7 projects and DataJuggler.Net6 for .NET 6 projects or DataJuggler.Net5 for .NEt 5 projects.</releaseNotes>
     <copyright>Copyright 2006 - 2022</copyright>
     <tags>DataJuggler DataJuggler.Net</tags>
     <dependencies>
-      <dependency id="DataJuggler.Core.UltimateHelper" version="1.5" include="contentFiles, build" />
+      <dependency id="DataJuggler.Core.UltimateHelper" version="1.6" include="contentFiles, build" />
       <dependency id="System.Data.SqlClient" version="4.8.0" />
     </dependencies>
   </metadata>
