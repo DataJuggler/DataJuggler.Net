@@ -34,8 +34,7 @@ namespace DataJuggler.Net
         private string objectNameSpaceName;
         private List<DataIndex> indexes;
         private List<CheckConstraint> checkConstraints;
-        private List<ForeignKeyConstraint> foreignKeys;
-        private bool createBindingCallback;
+        private List<ForeignKeyConstraint> foreignKeys;        
         private string schemaName;
         private string tag;
 		#endregion
@@ -491,20 +490,6 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion	
-
-            #region CreateBindingCallback
-            public bool CreateBindingCallback
-            {
-                get
-                {
-                    return createBindingCallback;
-                }
-                set
-                {
-                    createBindingCallback = value;
-                }
-            }
-            #endregion
 
 			#region CreateCollectionClass
 			public bool CreateCollectionClass

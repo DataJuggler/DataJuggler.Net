@@ -139,11 +139,6 @@ namespace DataJuggler.Net.Xml.Writers
                     sb.Append(indentString2);
                     sb.Append("<ContainsBinaryData>" + dataTable.ContainsBinaryData + "</ContainsBinaryData>" + Environment.NewLine);
 
-                    // Write out the value for CreateBindingCallback
-
-                    sb.Append(indentString2);
-                    sb.Append("<CreateBindingCallback>" + dataTable.CreateBindingCallback + "</CreateBindingCallback>" + Environment.NewLine);
-
                     // Write out the value for CreateCollectionClass
 
                     sb.Append(indentString2);

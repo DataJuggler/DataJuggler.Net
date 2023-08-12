@@ -1367,49 +1367,6 @@ namespace DataJuggler.Net
 			}
 			#endregion				
 
-            #region WriteCallbackPrivateVariable()
-            /// <summary>
-            /// This method is used to write out a private variable 
-            /// </summary>
-            public void WriteCallbackPrivateVariable()
-            {
-                // Create New String
-				StringBuilder sb = new StringBuilder("private ");
-        		
-				// Append dataType
-				sb.Append("ItemChangedCallback");
-
-				// Append Space
-				sb.Append(" ");
-
-                // append the fieldName
-				sb.Append("callback");
-
-				// Append Closing Semicolon
-				sb.Append(";");
-
-				// Write This Line
-				WriteLine(sb.ToString());
-            }
-            #endregion
-
-            #region WriteCallbackProperty()
-            /// <summary>
-            /// This method writes out the property for Callback
-            /// </summary>
-            public void WriteCallbackProperty()
-            {
-                // Create a new instance of a 'DataField' object.
-                DataField field = new DataField();
-
-                // Set the FieldName
-                field.FieldName = "Callback";
-
-                // Write out the property for ItemChangedCallbackk
-                WriteProperty(field, "ItemChangedCallback");
-            }
-            #endregion
-			
 			#region WriteClass(DataTable table)
 			private void WriteClass(DataTable table)
 			{		
@@ -1864,7 +1821,7 @@ namespace DataJuggler.Net
                             this.CreateFile(fullPath, DataManager.ProjectTypeEnum.ObjectLibrary);
 
                             // Write References
-                            this.WriteReferences(dataManager.References, dataTable.CreateBindingCallback);
+                            this.WriteReferences(dataManager.References);
 
                             // Write Blank Line & NameSpace
                             WriteLine();
@@ -3090,13 +3047,6 @@ namespace DataJuggler.Net
 				{
 				    // Write DataClassVariables
 				    WriteDataClassVariables(table);
-
-                    // If the value for the property table.CreateBindingCallback is true
-                    if (table.CreateBindingCallback)
-                    {
-                        // Write ItemChanged Callback Private 
-                        WriteCallbackPrivateVariable();
-                    }
 			    }
 
 				// Write EndRegion DataClassVariables
@@ -3118,18 +3068,9 @@ namespace DataJuggler.Net
 				    {
 					    // If this field should have a property created
                         if((!field.Exclude) && (field.DataType != DataManager.DataTypeEnum.NotSupported))
-					    {
-                            // If the value for the property table.CreateBindingCallback is true and this field is not a PrimaryKey
-                            if ((table.CreateBindingCallback) && (!field.PrimaryKey))
-                            {
-                                // Write out a property with a callback
-						        WritePropertyWithCallback(field);
-                            }
-                            else
-                            {
-                                // Write this property
-                                WriteProperty(field);
-                            }
+					    {  
+                            // Write this property
+                            WriteProperty(field);
 					    }
 				    }
 
@@ -3143,16 +3084,6 @@ namespace DataJuggler.Net
 					        WriteIsNewProperty(table);
                         }
 				    }
-
-                    // If the value for the property table.CreateBindingCallback is true
-                    if (table.CreateBindingCallback)
-                    {
-                        // Write ItemChanged Callback Private 
-                        WriteCallbackProperty();
-
-                        // Write out the readonly property HasCallback
-                        WriteHasCallbackProperty();
-                    }
 
                     // Write Empty Blank Line
                     WriteLine();	
@@ -3478,8 +3409,8 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region WriteReferences(ReferencesSet references, bool requireDelegatesReference = false)
-			public void WriteReferences(ReferencesSet references, bool requireDelegatesReference = false)
+			#region WriteReferences(ReferencesSet references)
+			public void WriteReferences(ReferencesSet references)
 			{
                 // locals
                 bool hasDelegateReference = false;
@@ -3502,128 +3433,9 @@ namespace DataJuggler.Net
 
                     // Write Each References
                     foreach (Reference reference in references)
-                    { 
-						// if the value for requireDelegatesReference is true
-						if (requireDelegatesReference)
-						{
-							// if .NET5
-							if (TargetFramework == TargetFrameworkEnum.Net5)
-							{
-								// if this reference name equals DataJuggler.Net5.Delegates
-								if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet5)))
-								{
-									// set to true
-									hasDelegateReference = true;
-								}
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net6)
-							{
-								// .NET6
-
-								// if this reference name equals DataJuggler.Net6.Delegates
-								if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet6)))
-								{
-									// set to true
-									hasDelegateReference = true;
-								}
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net7)
-							{
-								// .NET7
-
-								// if this reference name equals DataJuggler.Net6.Delegates
-								if ((!hasDelegateReference) && (TextHelper.IsEqual(reference.ReferenceName, DelegatesReferenceNet7)))
-								{
-									// set to true
-									hasDelegateReference = true;
-								}
-							}
-						
-							if (TargetFramework == TargetFrameworkEnum.Net5)
-							{
-								// if this reference name equals DataJuggler.Net5.Enumerations
-								if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNet5)))
-								{
-									// set to true
-									hasEnumerationsReference = true;
-								}
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net6)
-							{	
-								// if this reference name equals DataJuggler.Net5.Enumerations
-								if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNet6)))
-								{
-									// set to true
-									hasEnumerationsReference = true;
-								}
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net7)
-							{	
-								// if this reference name equals DataJuggler.Net5.Enumerations
-								if ((!hasEnumerationsReference) && (TextHelper.IsEqual(reference.ReferenceName, EnumerationsReferenceNet7)))
-								{
-									// set to true
-									hasEnumerationsReference = true;
-								}
-							}
-						}
-
+                    {
                         // Write This References
                         WriteReference(reference);
-                    }
-
-                    // If the DelegateReference was not found
-                    if (requireDelegatesReference)
-                    {	
-						// .NET 5, .NET6 or .NET 7 Only
-
-						// if the value for hasDelegateReference is false
-						if (!hasDelegateReference)
-						{
-							// if .NET5
-							if (TargetFramework == TargetFrameworkEnum.Net5)
-							{
-								// create a reference
-								referenceObject = new Reference(DelegatesReferenceNet5, 0);
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net6)
-							{
-								// create a reference
-								referenceObject = new Reference(DelegatesReferenceNet6, 0);
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net7)
-							{
-								// create a reference
-								referenceObject = new Reference(DelegatesReferenceNet7, 0);
-							}
-
-							// write out the reference for DataJuggler.Net5.Delegates or DataJuggler.Net6.Delegates
-							WriteReference(referenceObject);
-						}
-
-						// If the EnumerationsReference was not found
-						if (!hasEnumerationsReference)
-						{
-							// if the value for dotNet5Project is true
-							if (TargetFramework == TargetFrameworkEnum.Net5)
-							{
-								// Create a new instance of a 'Reference' object.
-								referenceObject = new Reference(EnumerationsReferenceNet5, 0);
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net6)
-							{
-								// Create a new instance of a 'Reference' object.
-								referenceObject = new Reference(EnumerationsReferenceNet6, 0);
-							}
-							else if (TargetFramework == TargetFrameworkEnum.Net7)
-							{
-								// Create a new instance of a 'Reference' object.
-								referenceObject = new Reference(EnumerationsReferenceNet7, 0);
-							}
-
-							// write out the reference for DataJuggler.Net5.Enumerations or DataJuggler.Net6.Enumerations or DataJuggler.Net7.Enumerations
-							WriteReference(referenceObject);
-						}
                     }
 
                     // Write Blank Line
