@@ -34,17 +34,7 @@ namespace DataJuggler.Net
         private ProjectFileManager fileManager;
         private bool textWriterMode;
         private StringBuilder textWriter;
-		private TargetFrameworkEnum targetFramework;
-		private const string DataJugglerNetFramework = "DataJuggler.Net";
-		private const string DataJugglerNet5 = "DataJuggler.Net5";
-		private const string DataJugglerNet6 = "DataJuggler.Net6";
-		private const string EnumerationsReferenceNetFramework = "DataJuggler.Net.Enumerations";
-		private const string DelegatesReferenceNet5 = "DataJuggler.Net5.Delegates";
-		private const string DelegatesReferenceNet6 = "DataJuggler.Net6.Delegates";
-		private const string DelegatesReferenceNet7 = "DataJuggler.Net7.Delegates";
-        private const string EnumerationsReferenceNet5 = "DataJuggler.Net5.Enumerations";
-		private const string EnumerationsReferenceNet6 = "DataJuggler.Net6.Enumerations";
-		private const string EnumerationsReferenceNet7 = "DataJuggler.Net7.Enumerations";
+		private TargetFrameworkEnum targetFramework;				
         #endregion
 		
 		#region Constructor
@@ -648,7 +638,7 @@ namespace DataJuggler.Net
             public string FormatClassName(string tableName)
             {
                 // initial value
-                string className = "";
+                string className;
 
                 // local
                 int firstCapitalLetterIndex = -1;
@@ -686,11 +676,8 @@ namespace DataJuggler.Net
             /// <returns></returns>
             public static string FormatClassNameEx(string tableName)
             {
-                // initial value
-                string className = tableName;
-
                 // Capitalize First Character
-                className = CapitalizeFirstCharEx(tableName);
+                string className = CapitalizeFirstCharEx(tableName);
 
                 // Remove Any Spaces In ClassName
                 className = className.Replace(" ", "");
@@ -835,9 +822,6 @@ namespace DataJuggler.Net
 			#region GetIndexDeclaration(string dataType, string primaryKeyFieldName)
 			public string GetIndexDeclaration(string dataType, string primaryKeyFieldName)
 			{
-			    // we need to convert to lowercase variable name
-			    string paramName = CapitalizeFirstChar(primaryKeyFieldName, true);
-			
 				// Creat StringBuilder
 				StringBuilder sb = new StringBuilder("public int GetIndex(");
                 sb.Append(dataType);
@@ -1320,7 +1304,8 @@ namespace DataJuggler.Net
 				// Verify That The Path For The File Exists
 				if(!dataManager.ValidPath(dataManager.ProjectFolder))
 				{
-					this.FailedReason = "The specified folder does not exist.";
+                    // Set the Failed Reason
+					this.FailedReason = "The specified folder '" + dataManager.ProjectFolder + "' does not exist.";
 					return false;
 				}
 
@@ -3413,9 +3398,9 @@ namespace DataJuggler.Net
 			public void WriteReferences(ReferencesSet references)
 			{
                 // locals
-                bool hasDelegateReference = false;
-                bool hasEnumerationsReference = false;
-                Reference referenceObject = null;
+                
+                
+                
 
                 try
                 {
