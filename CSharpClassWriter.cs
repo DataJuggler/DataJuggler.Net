@@ -413,6 +413,61 @@ namespace DataJuggler.Net
             }
             #endregion
 
+			#region CreateFieldList(DataTable dataTable, bool allFields, ref List<DataField> dataList)
+            /// <summary>
+            /// This method builds a list of fields comma seperated
+            /// enclosed in parentheses
+            /// </summary>
+            /// <param name="dataList"></param>
+            /// <returns></returns>
+            public static string CreateFieldList(DataTable dataTable, bool allFields, ref List<DataField> dataList)
+            {
+                // Create StringBuilder
+                StringBuilder sb = new StringBuilder("");
+
+                // if the data table exists
+                if ((dataTable != null) && (dataTable.ActiveFields != null))
+                {
+                    // Get the fields collection
+                    dataList = dataTable.ActiveFields;
+                }
+                
+				// if fields collection exist
+                if (dataList != null)
+                {
+					// Set to true
+					bool firstField = true;
+
+                    // loop through each field
+                    foreach (DataField field in dataList)
+                    {
+                        // if this is not the primary key
+                        if ((!field.PrimaryKey) || (allFields))
+                        {
+							// if not the firstField
+							if (!firstField)
+							{
+								// Append a comma
+								sb.Append(",");
+							}
+
+                            // Append This field
+                            sb.Append(field.FieldName);
+                                    
+							// Now commas get added after this
+							firstField = false;
+                        }
+                    }
+                }
+               
+                // set the return value
+                string fieldsList = sb.ToString();
+
+                // return value
+                return fieldsList;
+            }
+            #endregion
+
             #region CreateFromFieldLine(DataField field,string sourceObjectName)
             /// <summary>
             /// This method is to create a BusinessObject from a DataObject
@@ -572,10 +627,9 @@ namespace DataJuggler.Net
 				WriteComment("Create sql Statement");
 				
 				string Line = "string sql = this.table.SQLGenerator.CreateSelectSQL(this.table, fieldName, fieldValue);";
-				WriteLine(Line);
-				
+				WriteLine(Line);				
 			}
-			#endregion
+			#endregion			
 
 			#region DatabaseConstructor(string ClassName)
 			private string DatabaseConstructor(string className)
@@ -1758,6 +1812,231 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
+			#region WriteCreateValuesList(DataTable table)
+            /// <summary>
+            /// This method write out a method to create the ValuesList for an Insert SQL Statement
+            /// </summary>
+            /// <param name="table"></param>
+            private void WriteCreateValuesList(DataTable table)
+            {
+				// local
+				bool firstField = true;
+
+				// If the table object exists
+				if (table != null)
+				{
+					// initial value
+					string line = "CreateValuesList";
+                
+					// Write the region for this method
+					BeginRegion(line);
+                
+					// Write Comments For This Method
+					WriteComment("<summary>");
+					WriteComment("This method creates the ValuesList for an Insert SQL Statement.'");                
+					WriteComment("</summary>");
+
+					// Update line
+					line = "public string " + line + "()";
+
+					// write method declaration
+					WriteLine(line);
+                
+					// Write Open Bracket
+					WriteOpenBracket();
+                
+					// Increase Indent
+					indent++;
+
+					// Write a comment for the local variable
+					WriteComment("initial value");
+
+					// Write te valuesList
+					line = "string valuesList = \"\";";
+
+					// Write out the line
+					WriteLine(line);
+
+					// Write a blank line
+					WriteLine();
+
+					// Create a dataList to pass in
+					List<DataField> dataList = new List<DataField>();
+
+					// Here the FieldList is called just to get the same list of fields
+					CreateFieldList(table, false, ref dataList);
+
+					// Write out the local variables
+					WriteComment("locals");
+					
+					// Write out the locals used
+					WriteLine("System.Text.StringBuilder sb = new System.Text.StringBuilder();");
+					WriteLine("string comma = \",\";");
+					WriteLine("string singleQuote = \"'\";");
+
+					// Write Blank Line
+					WriteLine();
+
+					// ****************************************
+					// ********  Write Out The Field Values *********
+					// ****************************************
+
+					// If the dataList collection exists and has one or more items
+					if (ListHelper.HasOneOrMoreItems(dataList))
+					{
+						// Use all fields if not Auto Increment
+						bool allFields = (table.HasPrimaryKey && !table.PrimaryKey.IsAutoIncrement);
+
+						// Iterate the collection of DataField objects
+						foreach (DataField field in dataList)
+						{
+							// if this field is not hte Primary Key or if the PriamryKey is not AutoIncrement then it is included
+							if (!field.PrimaryKey || allFields)
+							{
+								// Get the propertyName
+								string propertyName = TextHelper.CapitalizeFirstChar(field.FieldName);
+
+								// if the value for firstField is false
+								if (!firstField)
+								{
+									// Add a comma between fields
+									WriteComment("Add a comma");
+									WriteLine("sb.Append(comma);");
+
+									// Write a blank line
+									WriteLine();
+								}
+
+								// Write out a comment for property name
+								WriteComment(propertyName);
+
+								// Write blank line
+								WriteLine();
+
+								// if String or Guid or Date
+								if (field.DataType == DataManager.DataTypeEnum.Boolean)
+								{
+									// Write out a comment before the If statement
+									WriteComment("If " + propertyName + " is true");
+
+									// create the line to write
+									line = "if (" + propertyName + ")";
+
+									// Write out this line
+									WriteLine(line);
+
+									// Write out an open bracket and increase indent
+									WriteOpenBracket(true);
+
+									// Write out the value as 1
+									WriteLine("sb.Append(1);");
+
+									// Write Close Bracket and Decrease Indent
+									WriteCloseBracket(true);
+
+									// Write out hte else line
+									WriteLine("else");
+
+									// Write out an open bracket and increase indent
+									WriteOpenBracket(true);
+
+									// Write out the value as 0
+									WriteLine("sb.Append(0);");
+
+									// Write Close Bracket and Decrease Indent
+									WriteCloseBracket(true);
+								}
+								else if (field.DataType == DataManager.DataTypeEnum.DateTime)
+								{
+									// Dates are handled slightly different - only add the value if the date.Year is > 1900
+									WriteComment("If a valid date");
+
+									// Write out the test for a valid date
+									WriteLine("if (" + propertyName + ".Year > 1900)");
+
+									// Write the open bracket and increase the indent
+									WriteOpenBracket(true);
+
+									// Write out open single quote '
+									WriteLine("sb.Append(singleQuote);");	
+
+									// Write out the value
+									WriteLine("sb.Append(" + propertyName + ".ToShortDateString());");	
+
+									// Write out closing single quote '
+									WriteLine("sb.Append(singleQuote);");
+
+									// Write Close Bracket and Decrease Indent
+									WriteCloseBracket(true);
+
+									// Write out hte else line
+									WriteLine("else");
+
+									// Write out an open bracket and increase indent
+									WriteOpenBracket(true);
+
+									// Write out a date for January 1, 1900.
+									WriteLine("sb.Append(\"'1900-01-01'\");");									
+
+									// Write Close Bracket and Decrease Indent
+									WriteCloseBracket(true);
+								}
+								else if ((field.DataType == DataManager.DataTypeEnum.String) || (field.DataType == DataManager.DataTypeEnum.Guid))
+								{
+									// Write out open single quote '
+									WriteLine("sb.Append(singleQuote);");	
+
+									// Write out the value
+									WriteLine("sb.Append(" + propertyName + ");");	
+
+									// Write out closing single quote '
+									WriteLine("sb.Append(singleQuote);");
+								}
+								else
+								{
+									// Write out the value
+									WriteLine("sb.Append(" + propertyName + ");");
+								}
+
+								// Write blank line between fields
+								WriteLine();
+
+								// no longer the first field
+								firstField = false;
+							}
+						}
+
+						// Set the Comment
+						WriteComment("Set the return value");
+
+						// Set the return value
+						line = "valuesList = sb.ToString();";
+
+						// Write the line
+						WriteLine(line);
+					}
+
+					// Write Comment Return Value
+					WriteComment("Return Value");
+
+					// Write out the return value
+					WriteLine("return valuesList;");
+                
+					// Decrease Indent
+					Indent--;
+                
+					// Write Close Bracket
+					WriteCloseBracket();
+                
+					// Write End Region
+					WriteLine("#endregion");
+
+					// Write blank line
+					WriteLine();
+				}
+            } 
+            #endregion
+
 			#region WriteCustomCode(System.Collections.ArrayList List)
 			private void WriteCustomCode(System.Collections.ArrayList List)
 			{
@@ -2156,6 +2435,93 @@ namespace DataJuggler.Net
 				#endregion
 
 			#endregion
+
+			#region WriteGenerateInsertSQL(DataTable table)
+            /// <summary>
+            /// This method is used to export an object from one server to another
+            /// </summary>
+            /// <param name="table"></param>
+            private void WriteGenerateInsertSQL(DataTable table)
+            {
+				// If the table object exists
+				if (table != null)
+				{
+					// initial value
+					string line = "GenerateInsertSQL";
+                
+					// Write the region for this method
+					BeginRegion(line);
+                
+					// Write Comments For This Method
+					WriteComment("<summary>");
+					WriteComment("This method generates a SQL Insert statement for ah object loaded.'");                
+					WriteComment("</summary>");
+
+					// Update line
+					line = "public string " + line + "()";
+
+					// write method declaration
+					WriteLine(line);
+                
+					// Write Open Bracket
+					WriteOpenBracket();
+                
+					// Increase Indent
+					indent++;
+
+					// Write a comment for the local variable
+					WriteComment("local");
+
+					// Create a dataList to pass in
+					List<DataField> dataList = new List<DataField>();
+
+					// Use all fields if not Auto Increment
+					bool allFields = (table.HasPrimaryKey && !table.PrimaryKey.IsAutoIncrement);
+
+					// Generate the FIeldList
+					string fieldsList = CreateFieldList(table, allFields, ref dataList);
+
+					// Create the ValuesList
+					string valuesList = "string valuesList = CreateValuesList();";
+					
+					// Write out the ValuesList
+					WriteLine(valuesList);
+
+					// Write a blank line
+					WriteLine();
+
+					// Write Comment Initial Value
+					WriteComment("Set the return Value");
+
+					// Now create the variable					
+					string insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (" + fieldsList + ") VALUES (\" + valuesList + \");\";";
+                
+					// Write line to create the insertSQL
+					WriteLine(insertSQL);
+
+					// Write Blank Line
+					WriteLine();
+
+					// Write Comment Return Value
+					WriteComment("Return Value");
+
+					// Write out the return value
+					WriteLine("return insertSQL;");
+                
+					// Decrease Indent
+					Indent--;
+                
+					// Write Close Bracket
+					WriteCloseBracket();
+                
+					// Write End Region
+					WriteLine("#endregion");
+
+					// Write blank line
+					WriteLine();
+				}
+            } 
+            #endregion
 
 			#region WriteGet(DataField field) bool
 			private bool WriteGet(DataField field)
@@ -2928,11 +3294,24 @@ namespace DataJuggler.Net
                 // Write Blank Line
                 WriteLine();
 
+				// is GenerateInsertSQL true
+				bool generateInsertSQL = BooleanHelper.ParseBoolean(ConfigurationHelper.ReadAppSetting("WriteGenerateInsertScripts"), false, false);
+
                 // if the Data pass
 				if(!BusinessObjectPass)
 				{
 				    // Increase Indent
 				    Indent++;
+
+					// if generateInsertSQL is true and this table is not a view
+					if (generateInsertSQL && !table.IsView)
+					{
+						// Write the CreateValuesList method
+						WriteCreateValuesList(table);
+
+						// Write the GenerateInsertScript method
+						WriteGenerateInsertSQL(table);
+					}
                     
 				    // if we have a primary key
                     if ((table.HasPrimaryKey) && (!table.IsView))
@@ -2940,13 +3319,8 @@ namespace DataJuggler.Net
                         // Write UpdateIdentity method
                         WriteUpdateIdentityMethod(table);
                     }
-                    else
-                    {
-                        // get table name
-                        string tableName = table.Name; 
-                    }
-    				
-				    // Decrease Indent
+					    				
+					// Decrease Indent
 				    Indent--;
 
 				    // Write Blank Line
