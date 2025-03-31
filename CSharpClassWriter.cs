@@ -2016,6 +2016,9 @@ namespace DataJuggler.Net
 						WriteLine(line);
 					}
 
+					// Write blank line (fixes bug in 5.4.1 DataTier.NET and 6.5.1 of this package)
+					WriteLine();
+
 					// Write Comment Return Value
 					WriteComment("Return Value");
 
