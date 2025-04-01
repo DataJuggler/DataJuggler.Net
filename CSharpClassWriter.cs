@@ -2499,16 +2499,20 @@ namespace DataJuggler.Net
 					// local
 					string insertSQL = "";
 
+					// if the Table has a primary key and the primary key is AutoIncrment
 					if ((table.HasPrimaryKey) && (table.PrimaryKey.IsAutoIncrement))
 					{
-						// Emit code that includes Environment.NewLine as a literal
 						insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (\" + fieldsList + \") VALUES (\" + valuesList + \") \""
-								  + " + Environment.NewLine + \" SELECT SCOPE_IDENTITY()\";";
+								  + " + Environment.NewLine +"
+								  + " \"SELECT SCOPE_IDENTITY()\"";
 					}
 					else
 					{
-						insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (\" + fieldsList + \") VALUES (\" + valuesList + \")\";";
+						insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (\" + fieldsList + \") VALUES (\" + valuesList + \")\"";
 					}
+
+					// Add newline at the end regardless of branch
+					insertSQL += " + Environment.NewLine";
                 
 					// Write line to create the insertSQL
 					WriteLine(insertSQL);
