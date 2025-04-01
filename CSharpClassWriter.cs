@@ -2497,7 +2497,7 @@ namespace DataJuggler.Net
 					WriteComment("Set the return Value");
 
 					// Now create the variable                  
-					string insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (" + fieldsList + ") VALUES (\" + valuesList + \");\"";
+					string insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (" + fieldsList + ") VALUES (\" + valuesList + \");\";";
 
 					// Check if the table has a primary key and if the primary key is an auto-increment field
 					if ((table.HasPrimaryKey) && (table.PrimaryKey.IsAutoIncrement))
