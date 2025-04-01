@@ -2503,7 +2503,7 @@ namespace DataJuggler.Net
 					if ((table.HasPrimaryKey) && (table.PrimaryKey.IsAutoIncrement))
 					{
 						// Add Select Scope_Identity to get the get the new id if needed
-						insertSQL += " + \" SELECT SCOPE_IDENTITY();\"";
+						insertSQL += " + \" SELECT SCOPE_IDENTITY();\";";
 					}
                 
 					// Write line to create the insertSQL
