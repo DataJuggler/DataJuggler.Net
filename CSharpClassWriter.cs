@@ -2496,14 +2496,22 @@ namespace DataJuggler.Net
 					// Write Comment Initial Value
 					WriteComment("Set the return Value");
 
-					// Now create the variable                  
-					string insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (" + fieldsList + ") VALUES (\" + valuesList + \");\";";
+					// local
+					string insertSQL = "";
 
 					// Check if the table has a primary key and if the primary key is an auto-increment field
 					if ((table.HasPrimaryKey) && (table.PrimaryKey.IsAutoIncrement))
 					{
+						// Now create the variable                  
+						insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (" + fieldsList + ") VALUES (\" + valuesList + \");\"" + Environment.NewLine;
+
 						// Add Select Scope_Identity to get the get the new id if needed
 						insertSQL += " + \" SELECT SCOPE_IDENTITY();\";";
+					}
+					else
+					{
+						// Now create the variable                  
+						insertSQL = "string insertSQL = \"INSERT INTO [" + table.Name + "] (" + fieldsList + ") VALUES (\" + valuesList + \");\";";						
 					}
                 
 					// Write line to create the insertSQL
