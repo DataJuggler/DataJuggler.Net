@@ -441,8 +441,12 @@ namespace DataJuggler.Net
                     // loop through each field
                     foreach (DataField field in dataList)
                     {
+						// Should this field be skipped
+						// This field should be included unless it is an IdentityInsertField
+						bool includeField = !field.IsAutoIncrement;
+
                         // if this is not the primary key
-                        if ((!field.PrimaryKey) || (allFields))
+                        if (includeField || allFields)
                         {
 							// if not the firstField
 							if (!firstField)
@@ -1884,14 +1888,14 @@ namespace DataJuggler.Net
 					// If the dataList collection exists and has one or more items
 					if (ListHelper.HasOneOrMoreItems(dataList))
 					{
-						// Use all fields if not Auto Increment
-						bool allFields = (table.HasPrimaryKey && !table.PrimaryKey.IsAutoIncrement);
-
 						// Iterate the collection of DataField objects
 						foreach (DataField field in dataList)
 						{
-							// if this field is not hte Primary Key or if the PriamryKey is not AutoIncrement then it is included
-							if (!field.PrimaryKey || allFields)
+							// This field should be included unless it is an IdentityInsertField
+							bool includeField = !field.IsAutoIncrement;
+							
+							// If this field should be included (All Fields Except IdentityInsert Fields)
+							if (includeField)
 							{
 								// Get the propertyName
 								string propertyName = TextHelper.CapitalizeFirstChar(field.FieldName);
