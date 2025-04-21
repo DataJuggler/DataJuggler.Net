@@ -1964,8 +1964,8 @@ namespace DataJuggler.Net
 									// Write out open single quote '
 									WriteLine("sb.Append(singleQuote);");	
 
-									// Write out the value
-									WriteLine("sb.Append(" + propertyName + ".ToShortDateString());");	
+									// Insert the Date including the time
+									WriteLine("sb.Append(" + propertyName + ".ToString(\"yyyy-MM-dd HH:mm:ss\"));");
 
 									// Write out closing single quote '
 									WriteLine("sb.Append(singleQuote);");
