@@ -1886,11 +1886,23 @@ namespace DataJuggler.Net
 						// Write out the locals used
 						WriteLine("System.Text.StringBuilder sb = new System.Text.StringBuilder();");
 
-						// write out a Comma
-						if (dataList.Count > 1)
+						if ((table.HasPrimaryKey) && (table.PrimaryKey.IsAutoIncrement))
 						{
-							// There is more than one ifeld so a comma is needed
-							WriteLine("string comma = \",\";");
+							// If greater than 2 fields, since the PrimaryKey won't get written
+							if (dataList.Count > 2)
+							{
+								// There is more than one ifeld so a comma is needed
+								WriteLine("string comma = \",\";");						
+							}
+						}
+						else
+						{
+							// If greater than 1 field since all the fields needs to get inserted
+							if (dataList.Count > 1)
+							{
+								// There is more than one ifeld so a comma is needed
+								WriteLine("string comma = \",\";");						
+							}
 						}
 
 						// Test if there are any string fields
