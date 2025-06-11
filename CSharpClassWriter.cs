@@ -3,11 +3,14 @@
 #region using statements
 
 using DataJuggler.Core.UltimateHelper;
-using System;
-using System.IO;
-using System.Text;
-using System.Collections.Generic;
 using DataJuggler.Net.Enumerations;
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Text;
+using static DataJuggler.Net.DataManager;
+using types = DataJuggler.Net.DataManager.DataTypeEnum;
 
 #endregion
 
@@ -1870,17 +1873,6 @@ namespace DataJuggler.Net
 					// Here the FieldList is called just to get the same list of fields
 					CreateFieldList(table, false, ref dataList);
 
-					// Write out the local variables
-					WriteComment("locals");
-					
-					// Write out the locals used
-					WriteLine("System.Text.StringBuilder sb = new System.Text.StringBuilder();");
-					WriteLine("string comma = \",\";");
-					WriteLine("string singleQuote = \"'\";");
-
-					// Write Blank Line
-					WriteLine();
-
 					// ****************************************
 					// ********  Write Out The Field Values *********
 					// ****************************************
@@ -1888,6 +1880,32 @@ namespace DataJuggler.Net
 					// If the dataList collection exists and has one or more items
 					if (ListHelper.HasOneOrMoreItems(dataList))
 					{
+						// Write out the local variables
+						WriteComment("locals");
+
+						// Write out the locals used
+						WriteLine("System.Text.StringBuilder sb = new System.Text.StringBuilder();");
+
+						// write out a Comma
+						if (dataList.Count > 1)
+						{
+							// There is more than one ifeld so a comma is needed
+							WriteLine("string comma = \",\";");
+						}
+
+						// Test if there are any string fields
+						List<DataField> stringFields = dataList.Where(x => x.DataType == DataTypeEnum.String || x.DataType == DataTypeEnum.DateTime || x.DataType == DataTypeEnum.Guid).ToList();
+
+						// If the stringFields collection exists and has one or more items
+						if (ListHelper.HasOneOrMoreItems(stringFields))
+						{
+							// Write out the variable
+							WriteLine("string singleQuote = \"'\";");
+						}
+
+						// Write Blank Line
+						WriteLine();
+
 						// Iterate the collection of DataField objects
 						foreach (DataField field in dataList)
 						{
@@ -1917,7 +1935,7 @@ namespace DataJuggler.Net
 								// Write blank line
 								WriteLine();
 
-								// if String or Guid or Date
+								// if Boolean
 								if (field.DataType == DataManager.DataTypeEnum.Boolean)
 								{
 									// Write out a comment before the If statement
