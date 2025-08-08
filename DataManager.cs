@@ -453,10 +453,11 @@ namespace DataJuggler.Net
             {
                 NotSupported = 0,
                 Autonumber = 3,
+				BigInt = 15,
                 Currency = 6,
                 DateTime = 7,
                 Double = 5,
-                Integer = 2,
+                Integer = 2,				
                 Percentage = 4,
                 String = 130,
                 YesNo = 11,

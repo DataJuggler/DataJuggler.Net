@@ -3216,6 +3216,12 @@ namespace DataJuggler.Net
 						
 							// Integer
 							return DataManager.DataTypeEnum.Integer;
+
+                        case "bigint":
+                        case "long":
+
+                            // long
+							return DataManager.DataTypeEnum.BigInt;
 						
 						case "system.datetime":
                         case "datetime":

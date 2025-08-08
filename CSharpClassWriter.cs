@@ -317,6 +317,14 @@ namespace DataJuggler.Net
         						
 						        // required
 						        break;
+
+							case DataManager.DataTypeEnum.BigInt:
+					        
+						        // set data type to int
+						        dataType = "long";
+        						
+						        // required
+						        break;
         						
 					        case DataManager.DataTypeEnum.Percentage: 
 					        case DataManager.DataTypeEnum.Double:
