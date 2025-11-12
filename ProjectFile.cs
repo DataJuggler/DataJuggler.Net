@@ -360,7 +360,7 @@ namespace DataJuggler.Net
                     // initial value
                     bool isStoredProcedure = false;
 
-                    // if this is a DataAccessComponent.DataManager file
+                    // if this is a StoredProcedure
                     isStoredProcedure = ((this.ProjectType == DataManager.ProjectTypeEnum.DAC) && (this.HasFileName) && (this.FileName.EndsWith("StoredProcedure.cs")));
 
                     // return value
@@ -475,9 +475,9 @@ namespace DataJuggler.Net
 
                         // if this is a DataManager
                         if ((IsDataManager) || (IsReader) || (IsWriter))
-                        {
+                        {  
                             // Append the parent folder
-                            sb.Append(@"DataManager\");
+                            sb.Append(@"Data\");
 
                             // if the value for IsReader is true
                             if (IsReader)

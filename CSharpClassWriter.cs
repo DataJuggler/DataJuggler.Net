@@ -1998,7 +1998,7 @@ namespace DataJuggler.Net
 
 									// Write the open bracket and increase the indent
 									WriteOpenBracket(true);
-
+									
 									// Write out open single quote '
 									WriteLine("sb.Append(singleQuote);");	
 
@@ -2017,8 +2017,17 @@ namespace DataJuggler.Net
 									// Write out an open bracket and increase indent
 									WriteOpenBracket(true);
 
-									// Write out a date for January 1, 1900.
-									WriteLine("sb.Append(\"'1900-01-01'\");");									
+									// if the field can be null
+									if (field.IsNullable)
+									{
+										// Insert the Date including the time
+										WriteLine("sb.Append(\"NULL\");");
+									}
+									else
+									{
+										// Write out a date for January 1, 1900.
+										WriteLine("sb.Append(\"'1900-01-01'\");");
+									}
 
 									// Write Close Bracket and Decrease Indent
 									WriteCloseBracket(true);
@@ -2718,6 +2727,117 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
+			#region WriteGetValueMethod(DataTable table)
+			/// <summary>
+			/// Write Get Value Method
+			/// </summary>
+			public void WriteGetValueMethod(DataTable table)
+			{
+				// If the table object exists
+				if (table != null)
+				{
+					// initial value
+					string line = "GetValue(string fieldName)";
+                
+					// Write the region for this method
+					BeginRegion(line);
+                
+					// Write Comments For This Method
+					WriteComment("<summary>");
+					WriteComment("This method returns the value for the fieldName given");                
+					WriteComment("</summary>");
+
+					// Update line
+					line = "public object " + line;
+
+					// write method declaration
+					WriteLine(line);
+                
+					// Write Open Bracket
+					WriteOpenBracket();
+                
+					// Increase Indent
+					indent++;
+
+					// Write a comment for the initial value
+					WriteComment("initial value");
+
+					// Write line for the initial value
+					WriteLine("object value = \"\";");
+
+					// write a blank line
+					WriteLine();
+
+					// write a comment before the switch statement
+					WriteComment("// Determine the action by the fieldName");
+
+					// write the switch statement
+					WriteLine("switch (fieldName)");
+
+					// Write an openBracket and indent++
+					WriteOpenBracket(true);
+
+					// Iterate the collection of DataField objects
+					foreach (DataField field in table.ActiveFields)
+					{
+						// Write a line for this field
+						WriteLine("case \"" + field.FieldName + "\":");
+
+						// Write a blank line
+						WriteLine();
+
+						// increase indent
+						indent++;
+
+						// Write a comment
+						WriteComment("set the value");
+
+						// Write the return value for this field
+						WriteLine("value = this." + field.FieldName + ";");
+
+						// Write blank line
+						WriteLine();
+
+						// Write a comment required
+						WriteComment("required");
+
+						// write the break for this switch item
+						WriteLine("break;");
+
+						// write a blank line
+						WriteLine();
+
+						// decrease indent
+						indent--;
+					}
+
+					// Write an openBracket and indent--
+					WriteCloseBracket(true);
+
+					// write a blank line
+					WriteLine();
+
+					// Write a comment return value
+					WriteComment("return value");
+
+					// write the return value
+					WriteLine("return value;");
+
+					// Decrease Indent
+					Indent--;
+                
+					// Write Close Bracket
+					WriteCloseBracket();
+                
+					// Write End Region
+					WriteLine("#endregion");
+
+					// Write blank line
+					WriteLine();
+				}
+            }
+			#endregion
+
             #region WriteHasCallbackProperty()
             /// <summary>
             /// This method writes out a read only property Hascallback
@@ -3372,6 +3492,9 @@ namespace DataJuggler.Net
 						// Write the GenerateInsertScript method
 						WriteGenerateInsertSQL(table);
 					}
+
+					// Update 10.8.2025 Writing GetValue method
+					WriteGetValueMethod(table);
                     
 				    // if we have a primary key
                     if ((table.HasPrimaryKey) && (!table.IsView))
