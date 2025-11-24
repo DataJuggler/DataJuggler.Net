@@ -827,4 +827,3 @@ namespace DataJuggler.Net.Connection
     #endregion
 
 }
-

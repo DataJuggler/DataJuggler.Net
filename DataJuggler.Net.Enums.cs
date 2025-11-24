@@ -73,7 +73,8 @@ namespace DataJuggler.Net.Enumerations
         Net6 = 6,
         Net7 = 7,
         Net8 = 8,
-        Net9 = 9
+        Net9 = 9,
+        Net10 = 10
     }
     #endregion
 

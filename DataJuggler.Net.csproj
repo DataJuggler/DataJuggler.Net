@@ -109,6 +109,9 @@
     <SignAssembly>false</SignAssembly>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="DataJuggler.Core.UltimateHelper, Version=1.9.3.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>packages\DataJuggler.Core.UltimateHelper.1.9.3\lib\net48\DataJuggler.Core.UltimateHelper.dll</HintPath>
+    </Reference>
     <Reference Include="DataJuggler.Net.Cryptography, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\DataJuggler.Net.Cryptography.1.0.0\lib\net461\DataJuggler.Net.Cryptography.dll</HintPath>
     </Reference>
@@ -226,12 +229,6 @@
   <ItemGroup>
     <Folder Include="bin\" />
     <Folder Include="lib\net48\" />
-  </ItemGroup>
-  <ItemGroup>
-    <ProjectReference Include="..\UltimateHelper\DataJuggler.Core.UltimateHelper.csproj">
-      <Project>{b570d96e-c163-480d-8c89-192ac7cef60a}</Project>
-      <Name>DataJuggler.Core.UltimateHelper</Name>
-    </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <PropertyGroup>
