@@ -311,6 +311,23 @@ namespace DataJuggler.Net
 			}
 			#endregion	
 			
+			#region HasReferences
+			/// <summary>
+			/// This property returns true if this object has a 'References'.
+			/// </summary>
+			public bool HasReferences
+			{
+				get
+				{
+					// initial value
+					bool hasReferences = (References != null);
+
+					// return value
+					return hasReferences;
+				}
+			}
+			#endregion
+
 			#region NamespaceName
 			public string NamespaceName
 			{
