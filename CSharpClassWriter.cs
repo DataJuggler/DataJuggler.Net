@@ -1420,8 +1420,8 @@ namespace DataJuggler.Net
 			}
 			#endregion				
 
-			#region WriteClass(DataTable table)
-			private void WriteClass(DataTable table)
+			#region WriteClass(DataTable table, bool addIGetValueInterface = false)
+			private void WriteClass(DataTable table, bool addIGetValueInterface = false)
 			{		
 				// Write Blank Line
 				WriteLine();
@@ -1440,7 +1440,7 @@ namespace DataJuggler.Net
 				}
 
 				// Write Class Line -- example: public class ThisClass
-				WriteClassLine(className);
+				WriteClassLine(className, addIGetValueInterface);
 
 				// Write Open Bracket
 				WriteOpenBracket();
@@ -1468,7 +1468,7 @@ namespace DataJuggler.Net
 				}
 
            	    // Write Methods Section
-			    WriteMethods(table);
+			    WriteMethods(table, addIGetValueInterface);
 
 			    // Write Blank Line
 			    WriteLine();
@@ -1490,34 +1490,21 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-            #region WriteClasses(List<DataTable> tables, string nameSpaceName)
-            /// <summary>
-            /// This method writes the classes
-            /// </summary>
-            /// <param name="tables"></param>
-            /// <param name="nameSpaceName"></param>
-            private void WriteClasses(List<DataTable> tables, string nameSpaceName)
-			{	
-				// Write Each Class
-				foreach(DataJuggler.Net.DataTable table in tables)
-				{
-                    // must set the ObjectLibraryNameSpace for each table here
-                    table.ObjectNameSpaceName = nameSpaceName;
-				
-					// Write This Class
-					WriteClass(table);
-				}
-			}
-			#endregion
-
-			#region WriteClassLine
-			private void WriteClassLine(string ClassName)
+			#region WriteClassLine(string ClassName, bool addIGetValueInterface = false)
+			private void WriteClassLine(string ClassName, bool addIGetValueInterface = false)
 			{
 				// Build Class Line
 				StringBuilder sb = new StringBuilder("public partial class ");
 
 				// Append ClassName
 				sb.Append(ClassName);
+
+                // if the value for addIGetValueInterface is true
+				if (addIGetValueInterface)
+				{
+                    // Add the interface
+				    sb.Append(" : IGridValueProvider");	
+				}
 
 				// Write Line For This Class
 				WriteLine(sb.ToString());
@@ -3464,8 +3451,8 @@ namespace DataJuggler.Net
 			}	
 			#endregion
 
-			#region WriteMethods()
-			private void WriteMethods(DataJuggler.Net.DataTable table)
+			#region WriteMethods(DataJuggler.Net.DataTable table, bool addGatValueMethod)
+			private void WriteMethods(DataJuggler.Net.DataTable table, bool addGatValueMethod)
 			{
 				// Begin Region Constructor
 				BeginRegion("Methods");
@@ -3492,8 +3479,12 @@ namespace DataJuggler.Net
 						WriteGenerateInsertSQL(table);
 					}
 
-					// Update 10.8.2025 Writing GetValue method
-					WriteGetValueMethod(table);
+                    // if the value for addGatValueMethod is true
+                    if (addGatValueMethod)
+                    {
+					    // Update 10.8.2025 Writing GetValue method
+					    WriteGetValueMethod(table);
+                    }
                     
 				    // if we have a primary key
                     if ((table.HasPrimaryKey) && (!table.IsView))
@@ -3953,11 +3944,6 @@ namespace DataJuggler.Net
 			#region WriteReferences(ReferencesSet references)
 			public void WriteReferences(ReferencesSet references)
 			{
-                // locals
-                
-                
-                
-
                 try
                 {
                     // Write Blank Line

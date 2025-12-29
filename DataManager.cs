@@ -29,6 +29,7 @@ namespace DataJuggler.Net
 		private ReferencesSet references;
 		private bool serializable;
 		private string xmlfilename;
+		private bool addIGridValueInterface;
 		private SQLDatabaseConnector dataConnector;
 		#endregion
 
@@ -45,8 +46,8 @@ namespace DataJuggler.Net
 			}
 			#endregion
 		
-			#region DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage)
-			public DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage)
+			#region DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage, bool addIGridValueInterface = false)
+			public DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage, bool addIGridValueInterface = false)
 			{
 				// Set ClassLanguage
 				this.ClassLanguage = OutputLanguage;
@@ -60,6 +61,9 @@ namespace DataJuggler.Net
 				// Set ProjectFolder, ClassFileName & xmlFileName
 				this.ProjectFolder = projectFolder;
 				this.ProjectName = projectName;
+
+				// Set this here
+				this.AddIGridValueInterface = addIGridValueInterface;
 			}
 			#endregion
 			
@@ -243,6 +247,17 @@ namespace DataJuggler.Net
 		#endregion
 		
 		#region Properties
+
+			#region AddIGridValueInterface
+			/// <summary>
+			/// This property gets or sets the value for 'AddIGridValueInterface'.
+			/// </summary>
+			public bool AddIGridValueInterface
+			{
+				get { return addIGridValueInterface; }
+				set { addIGridValueInterface = value; }
+			}
+			#endregion
 
 			#region ClassName
 			public string ClassName
