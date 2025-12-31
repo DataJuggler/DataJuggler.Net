@@ -2140,7 +2140,7 @@ namespace DataJuggler.Net
                             Indent++;
 
                             // Write The Class For This File
-                            WriteClass(dataTable);
+                            WriteClass(dataTable, dataManager.AddIGridValueInterface);
                             
                             // Write Blank Line
                             WriteLine();
