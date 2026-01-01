@@ -76,18 +76,25 @@ namespace DataJuggler.Net
 
 		#region Methods
 
-			#region BeginClassRegion(string className)
+			#region BeginClassRegion(string className, bool addIGridValueInterface)
 			/// <summary>
 			/// This method writes a region with the className
             /// </summary>
 			/// <param name="className"></param>
-			private void BeginClassRegion(string className)
+			private void BeginClassRegion(string className, bool addIGridValueInterface)
 			{
 				// Create StringBuilder
 				StringBuilder sb = new StringBuilder("#region class ");
 
 				// Add Text To Line For StringBuilder
 				sb.Append(className);
+
+                // if addIGridValueInterface is true
+                if (addIGridValueInterface)
+                {
+                    // append the interface name
+                    sb.Append(" : IGridValueProvider");
+                }
 				
 				// Write This Line 
 				WriteLine(sb.ToString());
@@ -1420,8 +1427,8 @@ namespace DataJuggler.Net
 			}
 			#endregion				
 
-			#region WriteClass(DataTable table, bool addIGetValueInterface = false)
-			private void WriteClass(DataTable table, bool addIGetValueInterface = false)
+			#region WriteClass(DataTable table, bool addIGridValueInterface = false)
+			private void WriteClass(DataTable table, bool addIGridValueInterface = false)
 			{		
 				// Write Blank Line
 				WriteLine();
@@ -1430,7 +1437,7 @@ namespace DataJuggler.Net
 				string className = GetClassName(table);
 				
 				// Begin Region For This Class
-				BeginClassRegion(className);
+				BeginClassRegion(className, addIGridValueInterface);
 				
 				// If the table should be Serialized
 				if ((table.Serializable) && (this.BusinessObjectPass))
@@ -1440,7 +1447,7 @@ namespace DataJuggler.Net
 				}
 
 				// Write Class Line -- example: public class ThisClass
-				WriteClassLine(className, addIGetValueInterface);
+				WriteClassLine(className, addIGridValueInterface);
 
 				// Write Open Bracket
 				WriteOpenBracket();
@@ -1468,7 +1475,7 @@ namespace DataJuggler.Net
 				}
 
            	    // Write Methods Section
-			    WriteMethods(table, addIGetValueInterface);
+			    WriteMethods(table, addIGridValueInterface);
 
 			    // Write Blank Line
 			    WriteLine();
@@ -1490,8 +1497,8 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region WriteClassLine(string ClassName, bool addIGetValueInterface = false)
-			private void WriteClassLine(string ClassName, bool addIGetValueInterface = false)
+			#region WriteClassLine(string ClassName, bool addIGridValueInterface = false)
+			private void WriteClassLine(string ClassName, bool addIGridValueInterface = false)
 			{
 				// Build Class Line
 				StringBuilder sb = new StringBuilder("public partial class ");
@@ -1499,8 +1506,8 @@ namespace DataJuggler.Net
 				// Append ClassName
 				sb.Append(ClassName);
 
-                // if the value for addIGetValueInterface is true
-				if (addIGetValueInterface)
+                // if the value for addIGridValueInterface is true
+				if (addIGridValueInterface)
 				{
                     // Add the interface
 				    sb.Append(" : IGridValueProvider");	
