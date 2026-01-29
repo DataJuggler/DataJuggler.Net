@@ -165,6 +165,9 @@
     <Compile Include="DataIndex.cs" />
     <Compile Include="DataRow.cs" />
     <Compile Include="DataTable.cs" />
+    <Compile Include="DefaultValueConstraint.cs" />
+    <Compile Include="Delegates\CallBackEvents.cs" />
+    <Compile Include="Enumerations\Enumerations.cs" />
     <Compile Include="ForeignKeyConstraint.cs" />
     <Compile Include="ForeignKeyConstraintHelper.cs" />
     <Compile Include="Function.cs" />

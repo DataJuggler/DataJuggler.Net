@@ -17,7 +17,7 @@ namespace DataJuggler.Net.Enumerations
     }
     #endregion
 
-    #region enum IndexTypeEnum
+    #region Enum IndexTypeEnum
     /// <summary>
     /// This enumeration is the types of stored procedures
     /// </summary>
@@ -31,6 +31,19 @@ namespace DataJuggler.Net.Enumerations
         Spatial = 4,
         XVelocity = 5,
         ColumnStore = 6
+    }
+    #endregion
+
+    #region Enum StoredProcedureTypes
+    public enum StoredProcedureTypes : int
+    {
+        NotSet = 0,
+        Delete = 10,
+        Select = 20,
+        FetchAll = 21,
+        Find = 22,
+        Insert = 30,
+        Update = 40
     }
     #endregion
 
@@ -48,26 +61,13 @@ namespace DataJuggler.Net.Enumerations
     }
     #endregion
 
-	#region enum StoredProcedureTypes
-	public enum StoredProcedureTypes : int
-	{
-		NotSet = 0,
-		Delete = 10, 
-        Select = 20,
-        FetchAll = 21,
-		Find = 22,
-		Insert = 30,
-		Update = 40
-	}
-    #endregion
-
     #region TargetFrameworkEnum : int
     /// <summary>
     /// This enum is used to help CSharpClassWriter keep track of refernces to add
     /// and possibly other differences 
     /// </summary>
     public enum TargetFrameworkEnum : int
-    {  
+    {
         NetFramework = 4,
         Net5 = 5,
         Net6 = 6,
