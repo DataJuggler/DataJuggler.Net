@@ -3,6 +3,7 @@
 #region using statements
 
 using DataJuggler.Core.UltimateHelper;
+using DataJuggler.Net.Enumerations;
 using System;
 using System.Collections.Generic;
 using System.IO;
@@ -38,6 +39,7 @@ namespace DataJuggler.Net
         private List<string> createdFilePaths;
         private const string DelegatesReference = "DataJuggler.Net.Delegates";
         private const string EnumerationsReference = "DataJuggler.Net.Enumerations";
+        private TargetFrameworkEnum targetFramework;
         #endregion
 
         #region Constructors
@@ -60,27 +62,30 @@ namespace DataJuggler.Net
         }
         #endregion
 
-        #region DataTier.Net Usage
-        /// <summary>
-        /// Create a new instance of a CSharpClassWriter.
-        /// </summary>
-        /// <param name="fileManager">The fileManager is used to keep track of which 
+        #region Constructor
+		/// <summary>
+		/// Create a new instance of a CSharpClassWriter.
+		/// </summary>
+		/// <param name="fileManager">The fileManager is used to keep track of which 
         /// files were added during a build.
         /// </param>
-        /// <param name="businessObjectPassArg">If true the business class is created, else the Data class.
+		/// <param name="businessObjectPassArg">If true the business class is created, else the data class.
         /// This is for the .business.cs
         /// </param>
         /// <param name="textWriterMode">Set this to true to create a StringBuilder instead of a StreamWriter.</param>
-        public CSharpClassWriter(ProjectFileManager fileManager, bool businessObjectPassArg, bool textWriterMode = false)
-        {
-            // set the FileManager 
-            this.FileManager = fileManager;
-
+		public CSharpClassWriter(ProjectFileManager fileManager, bool businessObjectPassArg, bool textWriterMode = false, TargetFrameworkEnum targetFramework = TargetFrameworkEnum.NetFramework)
+		{
+		    // set the FileManager 
+		    this.FileManager = fileManager;
+		
             // set the BusinessObjectPass property
-            this.BusinessObjectPass = businessObjectPassArg;
+		    this.BusinessObjectPass = businessObjectPassArg;
 
             // store the arg for TextWriterMode
             this.TextWriterMode = textWriterMode;
+
+			// store the arg
+			this.TargetFramework = targetFramework;
 
             // if the value for TextWriterMode is true
             if (TextWriterMode)
@@ -88,8 +93,8 @@ namespace DataJuggler.Net
                 // Create a new instance of a 'StringBuilder' object.
                 this.TextWriter = new StringBuilder();
             }
-        }
-        #endregion
+		}
+		#endregion
 
         #endregion
 
@@ -3207,7 +3212,7 @@ namespace DataJuggler.Net
 
             // EndRegion For DataClass Properties
             EndRegion();
-        }
+        }   
         #endregion
 
         #region WriteProperty(DataField field) void +1 override
@@ -4085,6 +4090,17 @@ namespace DataJuggler.Net
                 // return value
                 return hasWriter;
             }
+        }
+        #endregion
+
+        #region TargetFramework
+        /// <summary>
+        /// This property gets or sets the value for 'TargetFramework'.
+        /// </summary>
+        public TargetFrameworkEnum TargetFramework
+        {
+            get { return targetFramework; }
+            set { targetFramework = value; }
         }
         #endregion
 
