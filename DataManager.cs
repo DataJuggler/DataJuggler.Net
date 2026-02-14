@@ -19,8 +19,7 @@ namespace DataJuggler.Net
 
 		#region Private Variables
 		private string classfilename;
-		private DataManager.ClassOutputLanguage classlanguage;
-		private DataManager.FileOptions classfileoptions;
+		private DataManager.ClassOutputLanguage classlanguage;		
 		private string classname;
 		private List<Database> databases;
 		private bool exclude;
@@ -30,8 +29,8 @@ namespace DataJuggler.Net
 		private ReferencesSet references;
 		private bool serializable;
 		private string xmlfilename;
-		private DataManager.FileOptions xmlfileoptions;
-        private SQLDatabaseConnector dataConnector;
+		private bool addIGridValueInterface;		
+		private SQLDatabaseConnector dataConnector;
 		#endregion
 
 		#region Constructor
@@ -44,15 +43,11 @@ namespace DataJuggler.Net
 
 				// Create References Collection
 				this.references = new ReferencesSet();
-
-				// Set FileOptions Default
-				this.ClassFileOptions = DataManager.FileOptions.SingleFile;
-
 			}
 			#endregion
 		
-			#region DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage)
-			public DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage)
+			#region DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage, bool addIGridValueInterface = false)
+			public DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage, bool addIGridValueInterface = false)
 			{
 				// Set ClassLanguage
 				this.ClassLanguage = OutputLanguage;
@@ -63,12 +58,12 @@ namespace DataJuggler.Net
 				// Create References Collection
 				this.references = new ReferencesSet();
 
-				// Set FileOptions Default
-				this.ClassFileOptions = DataManager.FileOptions.SingleFile;
-
 				// Set ProjectFolder, ClassFileName & xmlFileName
 				this.ProjectFolder = projectFolder;
 				this.ProjectName = projectName;
+
+				// Set this here
+				this.AddIGridValueInterface = addIGridValueInterface;
 			}
 			#endregion
 			
@@ -206,15 +201,15 @@ namespace DataJuggler.Net
 
 				switch(dataType)
 				{
-					case DataTypeEnum.Autonumber:
-					case DataTypeEnum.Currency:
-					case DataTypeEnum.Double:
-					case DataTypeEnum.String:
-					case DataTypeEnum.Integer:
-					case DataTypeEnum.DateTime:
-			        case DataTypeEnum.Boolean:
-			        case DataTypeEnum.Guid:
-					
+					case DataManager.DataTypeEnum.Autonumber:
+					case DataManager.DataTypeEnum.Currency:
+					case DataManager.DataTypeEnum.Double:
+					case DataManager.DataTypeEnum.String:
+					case DataManager.DataTypeEnum.Integer:
+					case DataManager.DataTypeEnum.DateTime:
+			        case DataManager.DataTypeEnum.Boolean:
+			        case DataManager.DataTypeEnum.Guid:
+
 					// Added Object for supporting custom code generations (outside of DataTier.Net)
 					case DataTypeEnum.Object:
 
@@ -256,6 +251,17 @@ namespace DataJuggler.Net
 		
 		#region Properties
 
+			#region AddIGridValueInterface
+			/// <summary>
+			/// This property gets or sets the value for 'AddIGridValueInterface'.
+			/// </summary>
+			public bool AddIGridValueInterface
+			{
+				get { return addIGridValueInterface; }
+				set { addIGridValueInterface = value; }
+			}
+			#endregion
+
 			#region ClassName
 			public string ClassName
 			{
@@ -283,20 +289,6 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
-
-			#region ClassFileOptions
-			public DataManager.FileOptions ClassFileOptions
-			{
-				get
-				{
-					return classfileoptions;
-				}
-				set
-				{
-					classfileoptions = value;
-				}
-			}
-			#endregion	
 
 			#region Databases
 			public List<Database> Databases
@@ -337,6 +329,23 @@ namespace DataJuggler.Net
 			}
 			#endregion	
 			
+			#region HasReferences
+			/// <summary>
+			/// This property returns true if this object has a 'References'.
+			/// </summary>
+			public bool HasReferences
+			{
+				get
+				{
+					// initial value
+					bool hasReferences = (References != null);
+
+					// return value
+					return hasReferences;
+				}
+			}
+			#endregion
+
 			#region NamespaceName
 			public string NamespaceName
 			{
@@ -413,7 +422,7 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region xmlFileName
+			#region XmlFileName
 			public string XmlFileName
 			{
 				get
@@ -427,20 +436,6 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region XmlFileOptions	
-			public DataManager.FileOptions XmlFileOptions
-			{
-				get
-				{
-					return xmlfileoptions;
-				}
-				set
-				{
-					xmlfileoptions = value;
-				}
-			}
-			#endregion	
-
 			#region ClassLanguage	
 			public DataManager.ClassOutputLanguage ClassLanguage
 			{
@@ -453,103 +448,94 @@ namespace DataJuggler.Net
 					classlanguage = value;
 				}
 			}
-        #endregion
+			#endregion	
 
-        #endregion
+		#endregion
 
-        #region Enumerations
+		#region Enumerations
 
-        #region Enum AccessMode
-        public enum AccessMode : int
-        {
-            ReadOnly = 0,
-            WriteOnly = 1,
-            ReadWrite = 2
-        }
-        #endregion
+            #region Enum AccessMode
+            public enum AccessMode : int
+            {
+                ReadOnly = 0,
+                WriteOnly = 1,
+                ReadWrite = 2
+            }
+            #endregion
+           
+			#region Enum ClassReadingMode
+			public enum ClassReadingMode : int
+			{
+				NotSet = 0,
+				PrivateVariablesMode = 1,
+				ConstructorsMode = 2,
+				MethodsMode = 3,
+				PropertiesMode = 4
+			}
+			#endregion
 
-        #region Enum ClassReadingMode
-        public enum ClassReadingMode : int
-        {
-            NotSet = 0,
-            PrivateVariablesMode = 1,
-            ConstructorsMode = 2,
-            MethodsMode = 3,
-            PropertiesMode = 4
-        }
-        #endregion
+			#region Enum ClassOutputLanguage
+			public enum ClassOutputLanguage : int
+			{
+				NotSet = 0,
+				CSharp = 1,
+				VBNet = 2
+			}
+			#endregion
 
-        #region Enum ClassOutputLanguage
-        public enum ClassOutputLanguage : int
-        {
-            NotSet = 0,
-            CSharp = 1,
-            VBNet = 2
-        }
-        #endregion
+            #region Enum DataTypeEnum
+			public enum DataTypeEnum : int
+			{
+				NotSupported = 0,
+				Object = 1,
+				Autonumber = 3,
+				Currency = 6,
+				DateTime = 7,
+				Double = 5,
+				Integer = 2,
+				BigInt = 15,
+				Percentage = 4,
+				String = 130,
+				YesNo = 11,
+				Decimal = 12,
+				DataTable = 10000,
+				Binary = 10001,
+				Boolean = 10002,
+				Guid = 10003,
+				Custom = 10004,
+				Enumeration = 10005
+			}
+			#endregion
 
-        #region Enum DataTypeEnum
-        public enum DataTypeEnum : int
-        {
-            NotSupported = 0,
-            Object = 1,
-            Autonumber = 3,
-            Currency = 6,
-            DateTime = 7,
-            Double = 5,
-            Integer = 2,
-            BigInt = 15,
-            Percentage = 4,
-            String = 130,
-            YesNo = 11,
-            Decimal = 12,
-            DataTable = 10000,
-            Binary = 10001,
-            Boolean = 10002,
-            Guid = 10003,
-            Custom = 10004,
-            Enumeration = 10005
-        }
-        #endregion
+            #region enum ProjectTypeEnum : int
+            /// <summary>
+            /// This enumeration is used to determine which 
+            /// project files should get added to after a 
+            /// build.
+            /// </summary>
+            public enum ProjectTypeEnum : int
+            {
+                NotSet = 0,
+                ALC = 1,
+                DAC = 2,
+                ObjectLibrary = 3,
+                Gateway = 4
+            } 
+            #endregion
 
-        #region Enum FileOptions
-        public enum FileOptions : int
-        {
-            SeperateFilesPerTable = 0,
-            SingleFile = 1,
-            SeperateFilesPerDatabase = 2
-        }
-        #endregion
+            #region Enum Scope
+            public enum Scope : int
+            {
+                Private = 0,
+                Protected = 1,
+                Internal = 2,
+                Public = 3
+            }
+            #endregion
 
-        #region enum ProjectTypeEnum : int
-        /// <summary>
-        /// This enumeration is used to determine which 
-        /// project files should get added to after a 
-        /// build.
-        /// </summary>
-        public enum ProjectTypeEnum : int
-        {
-            NotSet = 0,
-            ALC = 1,
-            DAC = 2,
-            ObjectLibrary = 3,
-            Gateway = 4
-        }
-        #endregion
+		#endregion
 
-        #region Enum Scope
-        public enum Scope : int
-        {
-            Private = 0,
-            Protected = 1,
-            Internal = 2,
-            Public = 3
-        }
-        #endregion
-
-        #endregion
-
-    }
-    #endregion
+	}
+	#endregion
 
 }
