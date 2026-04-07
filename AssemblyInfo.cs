@@ -30,7 +30,7 @@ using System.Runtime.InteropServices;
 // 2.5 Bugs Release
 // This is the new release for DataTier.Net. 
 
-[assembly: AssemblyVersion("7.0.0.0")]
+[assembly: AssemblyVersion("7.0.1.0")]
 
 //
 // In order to sign your assembly you must specify a key to use. Refer to the 
@@ -60,6 +60,6 @@ using System.Runtime.InteropServices;
 [assembly: AssemblyDelaySign(false)]
 [assembly: AssemblyKeyFile("")]
 [assembly: AssemblyKeyName("")]
-[assembly: AssemblyFileVersion("7.0.0.0")]
+[assembly: AssemblyFileVersion("7.0.1.0")]
 [assembly: ComVisibleAttribute(false)]
 [assembly: Guid("6c5e1ca6-6509-4b51-8710-1cce7c156eb3")]

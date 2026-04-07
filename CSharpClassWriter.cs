@@ -2722,6 +2722,25 @@ namespace DataJuggler.Net
                 // if TextWriterMode is true and the TextWriter exists
                 if ((TextWriterMode) && (HasTextWriter))
                 {
+                    // get the spacesCount
+                    int spacesCount = TextHelper.GetSpacesCount(linetext);
+
+                    // if the spacesCount was found
+                    if (spacesCount > 0)
+                    {
+                        // if the string has the wrong indent
+                        if ((spacesCount / 4) != indent)
+                        {
+                            // Update 4.6.2026 - Handling Indent for TextWriter mode
+                            linetext = IndentString(linetext.Trim());
+                        }
+                    }
+                    else
+                    {
+                        // Update 4.6.2026 - Handling Indent for TextWriter mode
+                        linetext = IndentString(linetext);
+                    }
+
                     // Append this line
                     TextWriter.Append(linetext);
                 }
