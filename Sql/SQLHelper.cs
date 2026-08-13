@@ -4,7 +4,7 @@
 
 using System;
 using System.Xml;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Collections.Generic;
 using DataJuggler.Net.Enumerations;
 using IDbDataParameter = System.Data.IDbDataParameter;

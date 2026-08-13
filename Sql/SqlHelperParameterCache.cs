@@ -5,7 +5,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Data;
 using System.Xml;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 using System.Collections;
 
 namespace DataJuggler.Net.Sql

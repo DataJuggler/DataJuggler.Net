@@ -3,7 +3,7 @@
 #region using statements
 
 using System.Text;
-using System.Data.SqlClient;
+using Microsoft.Data.SqlClient;
 
 #endregion
 
@@ -27,7 +27,7 @@ namespace DataJuggler.Net
         public static string BuildConnectionString(string serverName, string databaseName)
         {
             // Create an instance of the SqlConnectionStringBuilder
-            SqlConnectionStringBuilder connectionStringBuilder = new System.Data.SqlClient.SqlConnectionStringBuilder();
+            SqlConnectionStringBuilder connectionStringBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder();
 
             connectionStringBuilder.DataSource = serverName;
             connectionStringBuilder.InitialCatalog = databaseName;
@@ -50,7 +50,7 @@ namespace DataJuggler.Net
         public static string BuildConnectionString(string serverName, string databaseName, string userId, string password)
         {
             // Create an instance of the SqlConnectionStringBuilder
-            SqlConnectionStringBuilder connectionStringBuilder = new System.Data.SqlClient.SqlConnectionStringBuilder();
+            SqlConnectionStringBuilder connectionStringBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder();
 
             // set the properties
             connectionStringBuilder.DataSource = serverName;
