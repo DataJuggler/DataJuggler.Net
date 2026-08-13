@@ -1552,7 +1552,7 @@ namespace DataJuggler.Net
 					}
 
                     // Update for version 2; the database name was not being loaded
-                    System.Data.SqlClient.SqlConnectionStringBuilder builder = new System.Data.SqlClient.SqlConnectionStringBuilder(DatabaseConnection.ConnectionString);
+                    SqlConnectionStringBuilder builder = new SqlConnectionStringBuilder(DatabaseConnection.ConnectionString);
                     
                     // if the schema exists
                     if (NullHelper.Exists(builder))
