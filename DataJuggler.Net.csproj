@@ -112,7 +112,7 @@
   </PropertyGroup>
   <ItemGroup>
     <Reference Include="DataJuggler.Core.UltimateHelper, Version=1.9.12.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>packages\DataJuggler.Core.UltimateHelper.1.9.12\lib\net48\DataJuggler.Core.UltimateHelper.dll</HintPath>
+      <HintPath>packages\DataJuggler.Core.UltimateHelper.1.9.14\lib\net48\DataJuggler.Core.UltimateHelper.dll</HintPath>
     </Reference>
     <Reference Include="DataJuggler.Net.Cryptography, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>packages\DataJuggler.Net.Cryptography.1.0.0\lib\net461\DataJuggler.Net.Cryptography.dll</HintPath>
@@ -334,13 +334,13 @@
     <PostBuildEvent>
     </PostBuildEvent>
   </PropertyGroup>
-  <Import Project="packages\Microsoft.Data.SqlClient.SNI.6.0.2\build\net462\Microsoft.Data.SqlClient.SNI.targets" Condition="Exists('packages\Microsoft.Data.SqlClient.SNI.6.0.2\build\net462\Microsoft.Data.SqlClient.SNI.targets')" />
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
       <ErrorText>This project references NuGet package(s) that are missing on this computer. Use NuGet Package Restore to download them.  For more information, see http://go.microsoft.com/fwlink/?LinkID=322105. The missing file is {0}.</ErrorText>
     </PropertyGroup>
-    <Error Condition="!Exists('packages\Microsoft.Data.SqlClient.SNI.6.0.2\build\net462\Microsoft.Data.SqlClient.SNI.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Data.SqlClient.SNI.6.0.2\build\net462\Microsoft.Data.SqlClient.SNI.targets'))" />
     <Error Condition="!Exists('packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets'))" />
+    <Error Condition="!Exists('packages\Microsoft.Data.SqlClient.SNI.6.0.3\build\net462\Microsoft.Data.SqlClient.SNI.targets')" Text="$([System.String]::Format('$(ErrorText)', 'packages\Microsoft.Data.SqlClient.SNI.6.0.3\build\net462\Microsoft.Data.SqlClient.SNI.targets'))" />
   </Target>
   <Import Project="packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets" Condition="Exists('packages\System.ValueTuple.4.6.2\build\net471\System.ValueTuple.targets')" />
+  <Import Project="packages\Microsoft.Data.SqlClient.SNI.6.0.3\build\net462\Microsoft.Data.SqlClient.SNI.targets" Condition="Exists('packages\Microsoft.Data.SqlClient.SNI.6.0.3\build\net462\Microsoft.Data.SqlClient.SNI.targets')" />
 </Project>
