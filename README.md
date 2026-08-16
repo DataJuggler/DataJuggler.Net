@@ -16,6 +16,7 @@ This version DataJuggler.NET for .NET Framework is still used by DataTier.Net.
 # Updates
 
 8.16.2026: DataJuggler.Core.UltimateHelper was updated and Microsoft.Data.SqlClient was updated.
+Project was converted from package references to project references. 
 
 8.13.2026: DataJuggler.Core.UlimateHelper was updated and System.Data.SqlClient was replaced by Microsoft.Data.SqlClient.
 This might break some changes, but it's an easy fix to change the namespace.
