@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -29,6 +29,8 @@ namespace DataJuggler.Net
         private List<DataField> returnSetSchema;
         private bool doesNotHaveParameters;
         private string text;
+        private bool usesAnsiNulls;
+        private bool usesQuotedIdentifier;
         #endregion
 
         #region Constructor
@@ -176,9 +178,32 @@ namespace DataJuggler.Net
             }
             #endregion
             
+            #region UsesAnsiNulls
+            /// <summary>
+            /// This property gets or sets the value for 'UsesAnsiNulls'.
+            /// </summary>
+            public bool UsesAnsiNulls
+            {
+                get { return usesAnsiNulls; }
+                set { usesAnsiNulls = value; }
+            }
+            #endregion
+            
+            #region UsesQuotedIdentifier
+            /// <summary>
+            /// This property gets or sets the value for 'UsesQuotedIdentifier'.
+            /// </summary>
+            public bool UsesQuotedIdentifier
+            {
+                get { return usesQuotedIdentifier; }
+                set { usesQuotedIdentifier = value; }
+            }
+            #endregion
+            
         #endregion
 
     }
     #endregion
     
 }
+

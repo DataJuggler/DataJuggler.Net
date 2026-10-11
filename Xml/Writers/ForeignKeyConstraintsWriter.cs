@@ -107,7 +107,7 @@ namespace DataJuggler.Net.Xml.Writers
                     // Write out the value for ForeignKey
 
                     sb.Append(indentString2);
-                    sb.Append("<ForeignKey>" + foreignKeyConstraint.ForeignKey + "</ForeignKey>" + Environment.NewLine);
+                    sb.Append("<ForeignKey>" + foreignKeyConstraint.FieldName + "</ForeignKey>" + Environment.NewLine);
 
                     // Write out the value for Name
 

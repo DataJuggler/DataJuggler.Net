@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -22,27 +22,61 @@ namespace DataJuggler.Net
     {
         
         #region Private Variables
-        private int objectId;
-        private string name;
+        private bool allowPageLocks;
+        private bool allowRowLocks;
+        private bool clustered;
+        private List<IndexColumn> columns;
+        private int dataSpaceId;
+        private int fillFactor;
+        private string filterDefinition;
+        private bool hasFilter;
+        private bool ignoreDuplicateKey;
         private int indexId;
         private IndexTypeEnum indexType;
-        private string typeDescription;
-        private bool clustered;
-        private bool isUnique;
-        private bool isUniqueConstraint;
-        private bool isPrimary;
-        private int dataSpaceId;
-        private bool ignoreDuplicateKey;
-        private int fillFactor;
-        private bool isPadded;
         private bool isDisabled;
         private bool isHypothetical;
-        private bool allowRowLocks;
-        private bool allowPageLocks;
-        private bool hasFilter;
-        private string filterDefinition;
+        private bool isPadded;
+        private bool isPrimary;
+        private bool isUnique;
+        private bool isUniqueConstraint;
+        private string name;
+        private int objectId;
+        private string typeDescription;
+        #endregion
+        
+        #region Constructor
+        /// <summary>
+        /// Create a new instance of a 'DataIndex' object.
+        /// </summary>
+        public DataIndex()
+        {
+            // Create a new collection of 'IndexColumn' objects.
+            Columns = new List<IndexColumn>();
+        }
         #endregion
 
+        #region Methods
+
+            #region AddColumn(string fieldName, bool isDescendingKey, bool isIncludedColumn, int ordinal)
+            /// <summary>
+            /// method adds a Column to the Columns collection
+            /// </summary>
+            public void AddColumn(string fieldName, bool isDescendingKey, bool isIncludedColumn, int ordinal)
+            {
+                // if the Columns collection does not exist yet
+                if (!HasColumns)
+                {
+                    // create the collection
+                    Columns = new List<IndexColumn>();
+                }
+
+                // add this column
+                Columns.Add(new IndexColumn(fieldName, isDescendingKey, isIncludedColumn, ordinal));
+            }
+            #endregion
+            
+        #endregion
+        
         #region Properties
             
             #region AllowPageLocks
@@ -78,6 +112,17 @@ namespace DataJuggler.Net
             }
             #endregion
             
+            #region Columns
+            /// <summary>
+            /// This property gets or sets the value for 'Columns'.
+            /// </summary>
+            public List<IndexColumn> Columns
+            {
+                get { return columns; }
+                set { columns = value; }
+            }
+            #endregion
+            
             #region DataSpaceId
             /// <summary>
             /// This property gets or sets the value for 'DataSpaceId'.
@@ -108,6 +153,23 @@ namespace DataJuggler.Net
             {
                 get { return filterDefinition; }
                 set { filterDefinition = value; }
+            }
+            #endregion
+            
+            #region HasColumns
+            /// <summary>
+            /// This property returns true if this object has a 'Columns'.
+            /// </summary>
+            public bool HasColumns
+            {
+                get
+                {
+                    // initial value
+                    bool hasColumns = (Columns != null);
+
+                    // return value
+                    return hasColumns;
+                }
             }
             #endregion
             
@@ -260,3 +322,4 @@ namespace DataJuggler.Net
     #endregion
 
 }
+

@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -207,13 +207,13 @@ namespace DataJuggler.Net
                 // local
                 bool containsBinaryData;
 
-                // if the data table exists
+                // if the Data table exists
                 if (dataTable != null)
                 {
                     // Get the fields collection
                     fields = dataTable.Fields;
 
-                    // This table does contain binary data.
+                    // This table does contain binary Data.
                     containsBinaryData = dataTable.ContainsBinaryData;
                 }
 
@@ -410,8 +410,7 @@ namespace DataJuggler.Net
                 sb.Append("]");
 					
 				// return SelectSQL
-                return sb.ToString();
-				
+                return sb.ToString();				
 			}
 			#endregion
 
@@ -849,3 +848,4 @@ namespace DataJuggler.Net
 	#endregion
     
 }
+

@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -11,6 +11,7 @@ using Microsoft.Data.SqlClient;
 using System.Linq;
 using System.Text;
 using DataJuggler.Net.Xml.Writers;
+using DataJuggler.Net.Delegates;
 using DataJuggler.Net.Cryptography;
 
 #endregion
@@ -57,6 +58,47 @@ namespace DataJuggler.Net
 
 		#region Methods
 
+            #region BuildAddDefaultSQL(string tableName, DefaultValueConstraint constraint)
+            /// <summary>
+            /// Builds the ADD CONSTRAINT ... DEFAULT ... FOR sql for the constraint given. Uses the Definition text
+            /// when available; falls back to the numeric DefaultValue for older schemas without a Definition.
+            /// Skipped if the column already has a default (whatever its name).
+            /// </summary>
+            private string BuildAddDefaultSQL(string tableName, DefaultValueConstraint constraint)
+            {
+                // initial value
+                string sql = "";
+
+                // local
+                string definition = "";
+
+                // if the constraint exists and has a column
+                if ((NullHelper.Exists(constraint)) && (TextHelper.Exists(constraint.ColumnName)))
+                {
+                    // prefer the raw definition, e.g. ((1)), (getdate()), ('Pending')
+                    if (TextHelper.Exists(constraint.Definition))
+                    {
+                        definition = constraint.Definition;
+                    }
+                    else
+                    {
+                        // older schema: numeric value only
+                        definition = "(" + constraint.DefaultValue + ")";
+                    }
+
+                    // guard: only if the column has no default yet (checked by column, so a different name still counts)
+                    sql = "IF NOT EXISTS (SELECT 1 FROM sys.default_constraints dc INNER JOIN sys.columns c ON c.object_id = dc.parent_object_id AND c.column_id = dc.parent_column_id" +
+                          " WHERE dc.parent_object_id = OBJECT_ID(N'" + EscapeLiteral("[" + tableName + "]") + "') AND c.name = N'" + EscapeLiteral(constraint.ColumnName) + "')" + Environment.NewLine;
+
+                    // build the sql
+                    sql += "ALTER TABLE [" + tableName + "] ADD CONSTRAINT [" + constraint.ConstraintName + "] DEFAULT " + definition + " FOR [" + constraint.ColumnName + "]" + Environment.NewLine + "Go" + Environment.NewLine;
+                }
+
+                // return value
+                return sql;
+            }
+            #endregion
+
             #region BuildConnectionString(string serverName, string databaseName)
             /// <summary>
             /// This method builds a connection string when Windows Authentication is used.
@@ -88,7 +130,7 @@ namespace DataJuggler.Net
 			}
 			#endregion
 			
-			#region BuildTableSQL()
+			#region BuildTableSQL(DataJuggler.Net.DataTable dataTable)
 			public string BuildTableSQL(DataJuggler.Net.DataTable dataTable)
 			{
 				// Create sql Statement To Select All From This table
@@ -219,6 +261,27 @@ namespace DataJuggler.Net
 			}
 			#endregion
             
+            #region EscapeLiteral(string value)
+            /// <summary>
+            /// returns the value with single quotes doubled, for use inside N'...'
+            /// </summary>
+            private static string EscapeLiteral(string value)
+            {
+                // initial value
+                string escapedValue = "";
+
+                // If the value string exists
+                if (TextHelper.Exists(value))
+                {
+                    // double any single quotes
+                    escapedValue = value.Replace("'", "''");
+                }
+
+                // return value
+                return escapedValue;
+            }
+            #endregion
+
 			#region ExecuteNonQuery(string sql)
 			public bool ExecuteNonQuery(string sql)
 			{
@@ -384,6 +447,170 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
+            #region FindDepenciesForStoredProcedure(string procedureName, List<DataTable> allTables)
+            /// <summary>
+            /// This method finds all dependent tables and views for a stored procedure.
+            /// Note: The allTables collection must exist and this works only for single database querries.
+            /// </summary>
+            /// <param name="procedureName">The name of the procedure to find dependencies for</param>
+            /// <param name="allTables">All the tables for a database.</param>
+            /// <returns></returns>
+            public List<DataTable> FindDepenciesForStoredProcedure(string procedureName, List<DataTable> allTables)
+            {
+                // initial value
+                List<DataTable> depencies = new List<DataTable>();
+
+                try
+                {
+                    // if the procedureName is set and the allTables collection contains at least one item
+                    if ((TextHelper.Exists(procedureName)) && (ListHelper.HasOneOrMoreItems(allTables)))
+                    {
+                        // query to load all table names for this procedure
+                        string sql = "SELECT objects.name As DepencyName FROM sys.procedures INNER  JOIN sys.all_sql_modules ON all_sql_modules.object_id = procedures.object_id LEFT  JOIN sys.objects ON objects.name <> procedures.name AND all_sql_modules.definition LIKE '%' + objects.name + '%' WHERE  procedures.name = '" + procedureName + "'";
+
+                         // Open The command Object
+                        SqlCommand command = new SqlCommand(sql, DatabaseConnection);
+
+                        // Create a Data adapter
+                        SqlDataAdapter adapter = new SqlDataAdapter(command);
+
+                        // Create And Open Data
+                        DataSet DS = new DataSet();
+
+                        // Fill DataAdapter
+                        adapter.Fill(DS, "tables");
+
+                        // Load the CheckConstraints
+                        foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
+                        {
+                            // set the tableName
+                            string tableName = (string) dataRow["DepencyName"];
+
+                            // If the tableName string exists
+                            if (TextHelper.Exists(tableName))
+                            {
+                                // attempt to find this table in allTables
+                                DataTable tempDepency = allTables.FirstOrDefault(x => x.Name == tableName);
+
+                                // If the tempDepency object exists
+                                if (NullHelper.Exists(tempDepency))
+                                {
+                                    // Add this table
+                                    depencies.Add(tempDepency);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception error)
+                {
+                    // for debugging only
+                    string err = error.ToString();
+
+                    // Write the error to the debugger
+                    DebugHelper.WriteDebugError("FindDepenciesForStoredProcedure", "SQLDatabaseConnector", error);
+                }
+
+                // return value
+                return depencies;
+            }
+            #endregion
+
+            #region FindInsertIndex(List<DataField> dataFields, DataField field) 
+            /// <summary>
+            /// This method is used to find the field index of where to insert a field
+            /// </summary>
+            /// <param name="dataFields"></param>
+            /// <param name="field"></param>
+            /// <returns></returns>
+            public int FindInsertIndex(List<DataField> dataFields, DataField field) 
+            {
+                // initial value
+                int index = -1;
+
+                // local
+                int tempIndex = -1;
+
+                // iif the dataFields exist and the field exists
+                if ((ListHelper.HasOneOrMoreItems(dataFields)) && (NullHelper.Exists(field)))
+                {
+                    // Iterate the collection of DataField objects
+                    foreach (DataField tempField in dataFields)
+                    {
+                        // Increment the value for tempIndex
+                        tempIndex++;
+
+                        // set the value for compare
+                        int compare = String.Compare(tempField.FieldName, field.FieldName);
+
+                        // if we have reached the insert index
+                        if (compare > 0)
+                        {
+                            // set the return value
+                            index = tempIndex;
+
+                            // break out of the loop
+                            break;
+                        }
+                    }
+
+                    // if the index was not found
+                    if (index < 0)
+                    {
+                        // set the return value to the end (not found goes at the end)
+                        index = dataFields.Count;
+                    }
+                }
+                else
+                {
+                    // set to 0 for the first one
+                    index = 0;
+                }
+
+                // return value
+                return index;
+            }
+            #endregion
+			
+            #region FindPrimaryKeysCount(List<DataTable> depencies)
+            /// <summary>
+            /// This method is used to find the count of primary keys in the tables collection listed
+            /// </summary>
+            /// <param name="tables"></param>
+            /// <returns></returns>
+            public int FindPrimaryKeysCount(List<DataTable> depencies)
+            {
+                // initial value
+                int primaryKeysCount = 0;
+
+                // If the dependencies collection exists and has one or more items
+                if (ListHelper.HasOneOrMoreItems(depencies))
+                {
+                    // Iterate the collection of DataTable objects
+                    foreach (DataTable table in depencies)
+                    {
+                        // if there are one or more fields                       
+                        if (ListHelper.HasOneOrMoreItems(table.ActiveFields))
+                        {
+                            // iterate the collection of fields
+                            foreach (DataField field in table.ActiveFields)
+                            {
+                                // if this field is a Primary Key
+                                if (field.PrimaryKey)
+                                {
+                                    // Increment the value for primaryKeysCount
+                                    primaryKeysCount++;
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // return value
+                return primaryKeysCount;
+            }
+            #endregion
+
             #region FindField(List<DataField> fields, string fieldName)
             /// <summary>
             /// This method finds the Index of a field in the fields collection.
@@ -398,18 +625,12 @@ namespace DataJuggler.Net
 				// Initial Value (Not Found)
                 DataField field = null;
 
-                // local
-                int tempIndex = -1;
-
                 // If the fields collection exists and has one or more items
                 if (ListHelper.HasOneOrMoreItems(fields))
                 {
 				    // Check Each Column
                     foreach (DataField tempField in fields)
 				    {
-                        // Increment the value for tempIndex
-					    tempIndex++;
-					
 					    // If this Is the Correct field 
 					    if(tempField.FieldName.ToLower() == fieldName.ToLower())
 					    {
@@ -560,6 +781,84 @@ namespace DataJuggler.Net
             }
             #endregion
 
+            #region FindTable(List<DataTable> tables, string tableName)
+            /// <summary>
+            /// This method finds a table in the tables collection.
+            /// This was needed after the DataList<Tables> was removed
+            /// due to using XmlMirror to build writers work better with
+            /// List<T> objects than Collections that inherit from CollectionBase
+            /// </summary>
+            /// <param name="tables"></param>
+            /// <returns>If found the DataTable being sought</returns>
+			public static DataTable FindTable(List<DataTable> tables, string tableName)
+			{
+				// Initial Value (Not Found)
+                DataTable table = null;
+
+                // If the tables collection exists and has one or more items
+                if (ListHelper.HasOneOrMoreItems(tables))
+                {
+                    // Iterate the collection of DataTable objects
+                    foreach (DataTable tempTable in tables)
+				    {
+					    // If this Is the Correct table name 
+					    if(tempTable.Name.ToLower() == tableName.ToLower())
+					    {
+						    // set the return value
+						    table = tempTable;
+
+                            // break out of the loop
+                            break;
+					    }
+				    }
+                }
+				
+				// return value
+				return table;
+			}
+			#endregion
+
+            #region FindTableIndex(List<DataTable> tables, string tableName)
+            /// <summary>
+            /// This method finds the Index of a table in the tables collection.
+            /// </summary>
+            /// <param name="tables">table collection to search</param>
+            /// <param name="tableName">The tableName to find</param>
+            /// <returns>If found the index of the DataTable being sought</returns>
+			public static int FindTableIndex(List<DataTable> tables, string tableName)
+			{
+				// Initial Value (Not Found)
+                int index = -1;
+
+                // local
+                int tempIndex = -1;
+
+                // If the tables collection exists and has one or more items
+                if (ListHelper.HasOneOrMoreItems(tables))
+                {
+				    // Check Each Column
+                    foreach (DataTable table in tables)
+				    {
+                        // Increment the value for tempIndex
+					    tempIndex++;
+					
+					    // If this Is the Correct field 
+					    if(table.Name.ToLower() == tableName.ToLower())
+					    {
+						    // set the return value
+						    index = tempIndex;
+
+                            // break out of the loop
+                            break;
+					    }
+				    }
+                }
+				
+				// return value
+				return index;
+			}
+			#endregion
+
             #region GetDatabaseNamesForServer(string serverName, string connectionString)
             /// <summary>
             /// This method attempts to return the database names for the serverName given.
@@ -585,7 +884,7 @@ namespace DataJuggler.Net
                     // Open The command Object
                     SqlCommand command = new SqlCommand(sql, connection);
 
-                    // Create a data adapter
+                    // Create a Data adapter
                     SqlDataAdapter adapter = new SqlDataAdapter(command);
 
                     // Create And Open Data
@@ -635,7 +934,7 @@ namespace DataJuggler.Net
 			public string GetDatabaseSchemaHash(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
 			{  
                 // initial value
-                string schemaHash = "Error: Database Not Found";
+                string schemaHash = "";
 
                 // local
                 int schemaValue = 0;
@@ -646,55 +945,44 @@ namespace DataJuggler.Net
                 // If the database object exists
                 if (NullHelper.Exists(database))
                 {
-                    // Create a new instance of a 'DatabasesWriter' object.
-                    DatabasesWriter writer = new DatabasesWriter();
-
-                    // export the database to xml
-                    string xml = writer.ExportDatabase(database);
-
-                    // if the xml was found
-                    if (TextHelper.Exists(xml))
+                    // if the Tables collection exists and has one or more items
+                    if (ListHelper.HasOneOrMoreItems(database.Tables))
                     {
-                        // get an integer value for this xml
-                        schemaValue = GetTextValue(xml);
+                        // iterate the tables
+                        foreach (DataTable table in database.Tables)
+                        {
+                            // Add the value of this table Name
+                            schemaValue += GetTextValue(table.Name);
 
-                        // Convert the numeric value to a string, then encrypt
-                        schemaHash = CryptographyHelper.EncryptString(schemaValue.ToString());
+                            // if the table has fields
+                            if (ListHelper.HasOneOrMoreItems(table.Fields))
+                            {
+                                // iterate the fields
+                                foreach (DataField field in table.Fields)
+                                {
+                                    // Add the value of this field Name
+                                    schemaValue += GetTextValue(field.FieldName);
+
+                                    // Add the value of this field DBDataType
+                                    schemaValue += GetTextValue(field.DBDataType);
+                                }
+                            }
+                        }
+                    }
+
+                    // if the schemaValue has been calculated
+                    if (schemaValue > 0)
+                    {
+                        // convert to a number
+                        string temp = schemaValue.ToString();
+
+                        // encrypt the string 
+                        schemaHash = CryptographyHelper.EncryptString(temp);
                     }
                 }
 
 				// Return Database
 				return schemaHash;
-			}
-			#endregion
-
-            #region GetDatabaseSchemaXml(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
-			/// <summary>
-			/// Loads The Database Schema For The Database and returns a hashed value representing the current schema
-			/// </summary>
-			/// <param name="database"></param>
-			/// <param name="ConnectionString"></param>
-			/// <returns></return>
-			public string GetDatabaseSchemaXml(Database database, bool ignoreDataSync = true, bool ignoreAzureFirewallRules = true)
-			{  
-                // initial value
-                string xml = "Error: Database Not Found";
-
-			    // call the method to load the schema
-				database = LoadDatabaseSchema(database, ignoreDataSync, ignoreAzureFirewallRules);
-
-                // If the database object exists
-                if (NullHelper.Exists(database))
-                {
-                    // Create a new instance of a 'DatabasesWriter' object.
-                    DatabasesWriter writer = new DatabasesWriter();
-
-                    // export the database to xml
-                    xml = writer.ExportDatabase(database);
-                }
-
-				// Return Database
-				return xml;
 			}
 			#endregion
 
@@ -1009,50 +1297,49 @@ namespace DataJuggler.Net
             }
             #endregion
 
-            #region GetServerNames()
+            #region GetSqlObject(string objectName)
             /// <summary>
-            /// This method returns a list of servers
+            /// This method returns a SQL Object containing the Defintion, UseAnsiNulls, UseQuotedIdentifier, IsSchemaBound
+            /// This is used by DB Compare to know if a Stored Procedure or View should have Uses Ansi Nulls and Use Quoted Identifier
+            /// on before the objects is created
             /// </summary>
+            /// <param name="viewName"></param>
             /// <returns></returns>
-            public static List<string> GetServerNames()
+            public SqlObject GetSqlObject(string objectName)
             {
                 // initial value
-                List<string> serverNames = new List<string>();
+                SqlObject sqlObject = new SqlObject();
 
                 try
                 {
-                    // get the servers
-                    System.Data.DataTable servers = System.Data.Sql.SqlDataSourceEnumerator.Instance.GetDataSources();
+                    string sourceSQL = "Select definition, uses_ansi_nulls, uses_quoted_identifier, is_schema_bound FROM";
+                    sourceSQL += " sys.sql_modules Where object_id = object_id('" + objectName + "');";
 
-                    // if the servers
-                    if (NullHelper.Exists(servers))
-                    {
-                        // iterate the rows                        
-                        foreach (System.Data.DataRow row in servers.Rows)
-                        {
-                            // get the value for serverName
-                            string serverName = row["ServerName"].ToString();
+                    // Open The command Object
+                    SqlCommand command = new SqlCommand(sourceSQL, DatabaseConnection);
 
-                            // If the serverName string exists
-                            if (TextHelper.Exists(serverName))
-                            {
-                                // add this server
-                                serverNames.Add(serverName);
-                            }
-                        }
-                    }
+                    // Create a Data adapter
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
+
+                    // Create And Open Data
+                    DataSet DS = new DataSet();
+
+                    // Fill DataAdapter
+                    adapter.Fill(DS, "Views");
+
+                    sqlObject.Defintion = DS.Tables[0].Rows[0].ItemArray[0].ToString();
+                    sqlObject.UsesAnsiNulls = BooleanHelper.ParseBoolean(DS.Tables[0].Rows[0].ItemArray[1].ToString(), false, false);
+                    sqlObject.UsesQuotedIdentifier = BooleanHelper.ParseBoolean(DS.Tables[0].Rows[0].ItemArray[2].ToString(), false, false);
+                    sqlObject.IsSchemaBound = BooleanHelper.ParseBoolean(DS.Tables[0].Rows[0].ItemArray[3].ToString(), false, false);
                 }
                 catch (Exception error)
                 {
-                    // for debugging only
-                    string err = error.ToString();
-
-                    // Write the error to the output window
-                    DebugHelper.WriteDebugError("GetServerNames", "SQLDatabaseConnector", error);
+                    // for debugging only for now
+                    DebugHelper.WriteDebugError("GetViewText", "SQLDatabaseConnector", error);
                 }
 
                 // return value
-                return serverNames;
+                return sqlObject;
             }
             #endregion
 
@@ -1083,7 +1370,7 @@ namespace DataJuggler.Net
                         // get the first dataTable
                         System.Data.DataTable dataTable = dataSet.Tables[0];
 
-                        // if the dataTable has data
+                        // if the dataTable has Data
                         if (dataTable.Rows.Count > 0)
                         {
                             // iterate each row in the dataTable
@@ -1095,7 +1382,7 @@ namespace DataJuggler.Net
                                 // set the name
                                 parameter.ParameterName = row["Name"].ToString();
 
-                                // set the data type
+                                // set the Data type
                                 string dataTypeString = row["type"].ToString();
                                 parameter.DataType = ParseDataType(dataTypeString, false);
 
@@ -1126,7 +1413,7 @@ namespace DataJuggler.Net
             /// <summary>
             /// This method returns the tables that a store procedure is dependant on.
             /// This is used to help identity the primary key and other information 
-            /// about the data fields.
+            /// about the Data fields.
             /// </summary>
             /// <param name="allTables"></param>
             /// <param name="procedure"></param>
@@ -1189,167 +1476,44 @@ namespace DataJuggler.Net
             }
             #endregion
 
-            #region FindDepenciesForStoredProcedure(string procedureName, List<DataTable> allTables)
+            #region GetViewText(string viewName)
             /// <summary>
-            /// This method finds all dependent tables and views for a stored procedure.
-            /// Note: The allTables collection must exist and this works only for single database querries.
+            /// This method returns the text for a view
             /// </summary>
-            /// <param name="procedureName">The name of the procedure to find dependencies for</param>
-            /// <param name="allTables">All the tables for a database.</param>
+            /// <param name="viewName"></param>
             /// <returns></returns>
-            public List<DataTable> FindDepenciesForStoredProcedure(string procedureName, List<DataTable> allTables)
+            public string GetViewText(string viewName)
             {
                 // initial value
-                List<DataTable> depencies = new List<DataTable>();
+                string sql = "";
 
                 try
                 {
-                    // if the procedureName is set and the allTables collection contains at least one item
-                    if ((TextHelper.Exists(procedureName)) && (ListHelper.HasOneOrMoreItems(allTables)))
-                    {
-                        // query to load all table names for this procedure
-                        string sql = "SELECT objects.name As DepencyName FROM sys.procedures INNER  JOIN sys.all_sql_modules ON all_sql_modules.object_id = procedures.object_id LEFT  JOIN sys.objects ON objects.name <> procedures.name AND all_sql_modules.definition LIKE '%' + objects.name + '%' WHERE  procedures.name = '" + procedureName + "'";
+                    string sourceSQL = "Select definition, uses_ansi_nulls, uses_quoted_identifier, is_schema_bound FROM";
+                    sourceSQL += " sys.sql_modules Where object_id = object_id('" + viewName + "');";
 
-                         // Open The command Object
-                        SqlCommand command = new SqlCommand(sql, DatabaseConnection);
+                    // Open The command Object
+                    SqlCommand command = new SqlCommand(sourceSQL, DatabaseConnection);
 
-                        // Create a data adapter
-                        SqlDataAdapter adapter = new SqlDataAdapter(command);
+                    // Create a Data adapter
+                    SqlDataAdapter adapter = new SqlDataAdapter(command);
 
-                        // Create And Open Data
-                        DataSet DS = new DataSet();
+                    // Create And Open Data
+                    DataSet DS = new DataSet();
 
-                        // Fill DataAdapter
-                        adapter.Fill(DS, "tables");
+                    // Fill DataAdapter
+                    adapter.Fill(DS, "Views");
 
-                        // Load the CheckConstraints
-                        foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
-                        {
-                            // set the tableName
-                            string tableName = (string) dataRow["DepencyName"];
-
-                            // If the tableName string exists
-                            if (TextHelper.Exists(tableName))
-                            {
-                                // attempt to find this table in allTables
-                                DataTable tempDepency = allTables.FirstOrDefault(x => x.Name == tableName);
-
-                                // If the tempDepency object exists
-                                if (NullHelper.Exists(tempDepency))
-                                {
-                                    // Add this table
-                                    depencies.Add(tempDepency);
-                                }
-                            }
-                        }
-                    }
+                    sql = DS.Tables[0].Rows[0].ItemArray[0].ToString();
                 }
                 catch (Exception error)
                 {
-                    // for debugging only
-                    string err = error.ToString();
-
-                    // Write the error to the debugger
-                    DebugHelper.WriteDebugError("FindDepenciesForStoredProcedure", "SQLDatabaseConnector", error);
+                    // for debugging only for now
+                    DebugHelper.WriteDebugError("GetViewText", "SQLDatabaseConnector", error);
                 }
 
                 // return value
-                return depencies;
-            }
-            #endregion
-
-            #region FindInsertIndex(List<DataField> dataFields, DataField field) 
-            /// <summary>
-            /// This method is used to find the field index of where to insert a field
-            /// </summary>
-            /// <param name="dataFields"></param>
-            /// <param name="field"></param>
-            /// <returns></returns>
-            public int FindInsertIndex(List<DataField> dataFields, DataField field) 
-            {
-                // initial value
-                int index = -1;
-
-                // local
-                int tempIndex = -1;
-
-                // iif the dataFields exist and the field exists
-                if ((ListHelper.HasOneOrMoreItems(dataFields)) && (NullHelper.Exists(field)))
-                {
-                    // Iterate the collection of DataField objects
-                    foreach (DataField tempField in dataFields)
-                    {
-                        // Increment the value for tempIndex
-                        tempIndex++;
-
-                        // set the value for compare
-                        int compare = String.Compare(tempField.FieldName, field.FieldName);
-
-                        // if we have reached the insert index
-                        if (compare > 0)
-                        {
-                            // set the return value
-                            index = tempIndex;
-
-                            // break out of the loop
-                            break;
-                        }
-                    }
-
-                    // if the index was not found
-                    if (index < 0)
-                    {
-                        // set the return value to the end (not found goes at the end)
-                        index = dataFields.Count;
-                    }
-                }
-                else
-                {
-                    // set to 0 for the first one
-                    index = 0;
-                }
-
-                // return value
-                return index;
-            }
-            #endregion
-			
-            #region FindPrimaryKeysCount(List<DataTable> depencies)
-            /// <summary>
-            /// This method is used to find the count of primary keys in the tables collection listed
-            /// </summary>
-            /// <param name="tables"></param>
-            /// <returns></returns>
-            public int FindPrimaryKeysCount(List<DataTable> depencies)
-            {
-                // initial value
-                int primaryKeysCount = 0;
-
-                // If the dependencies collection exists and has one or more items
-                if (ListHelper.HasOneOrMoreItems(depencies))
-                {
-                    // Iterate the collection of DataTable objects
-                    foreach (DataTable table in depencies)
-                    {
-                        // if there are one or more fields                       
-                        if (ListHelper.HasOneOrMoreItems(table.ActiveFields))
-                        {
-                            // iterate the collection of fields
-                            foreach (DataField field in table.ActiveFields)
-                            {
-                                // if this field is a Primary Key
-                                if (field.PrimaryKey)
-                                {
-                                    // Increment the value for primaryKeysCount
-                                    primaryKeysCount++;
-                                }
-                            }
-                        }
-                    }
-                }
-
-                // return value
-                return primaryKeysCount;
+                return sql;
             }
             #endregion
 
@@ -1442,13 +1606,13 @@ namespace DataJuggler.Net
                     // if the dataTable exists
                     if (dataTable != null)
                     {
-                        // create the sql to get all the indexes for this table
+                        // create the sql to get all the CheckConstraints for this table
                         string sql = "SELECT TABLE_NAME, COLUMN_NAME, CHECK_CLAUSE, cc.CONSTRAINT_NAME FROM INFORMATION_SCHEMA.CHECK_CONSTRAINTS cc INNER JOIN INFORMATION_SCHEMA.CONSTRAINT_COLUMN_USAGE c ON cc.CONSTRAINT_NAME = c.CONSTRAINT_NAME Where TABLE_NAME = '[TableName]' ORDER BY TABLE_NAME, COLUMN_NAME".Replace("[TableName]", dataTable.Name);
 
                         // Open The command Object
                         SqlCommand command = new SqlCommand(sql, DatabaseConnection);
 
-                        // Create a data adapter
+                        // Create a Data adapter
                         SqlDataAdapter adapter = new SqlDataAdapter(command);
 
                         // Create And Open Data
@@ -1456,21 +1620,25 @@ namespace DataJuggler.Net
 
                         // Fill DataAdapter
                         adapter.Fill(DS, "tables");
+                        
+                        // if there is at least one row
+                       if (DS.Tables["tables"].Rows.Count > 0)
+                       {
+                            // Load the CheckConstraints
+                            foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
+                            {
+                                // Create a new CheckConstraint object
+                                checkConstraint = new CheckConstraint();
 
-                        // Load the CheckConstraints
-                        foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
-                        {
-                            // Create a new CheckConstraint object
-                            checkConstraint = new CheckConstraint();
+                                // map the properites in the dataRow to the new checkConstraint object
+                                checkConstraint.TableName = (string) dataRow["Table_Name"];
+                                checkConstraint.ColumnName = (string) dataRow["Column_Name"];
+                                checkConstraint.CheckClause = (string) dataRow["Check_Clause"];
+                                checkConstraint.ConstraintName = (string) dataRow["Constraint_Name"];
 
-                            // map the properites in the dataRow to the new checkConstraint object
-                            checkConstraint.TableName = (string) dataRow["Table_Name"];
-                            checkConstraint.ColumnName = (string) dataRow["Column_Name"];
-                            checkConstraint.CheckClause = (string) dataRow["Check_Clause"];
-                            checkConstraint.ConstraintName = (string) dataRow["Constraint_Name"];
-
-                            // add the new DataIndex to the indexes collection
-                            checkConstraints.Add(checkConstraint);
+                                // add the new DataIndex to the indexes collection
+                                checkConstraints.Add(checkConstraint);
+                            }
                         }
                     }
                 }
@@ -1488,15 +1656,15 @@ namespace DataJuggler.Net
             }
             #endregion
 			
-			#region LoadDatabaseData(Database database)
+			#region LoadDatabaseData(Database database, List<string> ignoreTables = null)
 			/// <summary>
-			/// Connects To And Loads The Data For A SQL Database
+			/// Connects To And Loads The Data For A SQL Server Database.
+            /// Make sure the Database has a connectionstring property set when this method is called.
 			/// </summary>
-			public Database LoadDatabaseData(Database database)
+			public Database LoadDatabaseData(Database database, List<string> ignoreTables = null)
 			{
 				try
 				{
-
 					// Create New Connection Object
 					DatabaseConnection = new SqlConnection(database.ConnectionString);
 		
@@ -1504,8 +1672,7 @@ namespace DataJuggler.Net
 					DatabaseConnection.Open();
 
 					// LoadDataTablesData
-					database.Tables = LoadDataTablesData(database.Tables);
-
+					database.Tables = LoadDataTablesData(database.Tables, ignoreTables);
 				}
 				catch(System.Exception e)
 				{
@@ -1604,15 +1771,15 @@ namespace DataJuggler.Net
 
             #region LoadDataFieldsSchema(ref List<DataTable> tables)
             /// <summary>
-			/// Load the Fields for a dataTable passed in.
-			/// </summary>
-			/// <param name="dataTable">The table to create the fields for.</param>
-			/// <returns></returns>
-			private void LoadDataFieldsSchema(ref List<DataTable> tables)
-			{
+            /// Load the Fields for a dataTable passed in.
+            /// </summary>
+            /// <param name="dataTable">The table to create the fields for.</param>
+            /// <returns></returns>
+            private void LoadDataFieldsSchema(ref List<DataTable> tables)
+            {
                 // local;
                 DataTable table = null;
-                
+
                 try
                 {
                     // If the tables collection exists and has one or more items
@@ -1627,14 +1794,14 @@ namespace DataJuggler.Net
                         // This is used to hold SchemaInformation about the current table and current field
                         List<DataField> schemaFields = null;
                         DataField schemaField = null;
-                        
+
                         // sql Statement To Select All tables
-                        string sql = "SELECT TABLE_SCHEMA, Table_Name, COLUMN_NAME, ORDINAL_POSITION, COLUMN_DEFAULT, Is_Nullable, Data_Type, CHARACTER_MAXIMUM_LENGTH, Numeric_Precision, Numeric_Scale FROM INFORMATION_SCHEMA.COLUMNS";
-                            
+                        string sql = "SELECT TABLE_SCHEMA, Table_Name, COLUMN_NAME, ORDINAL_POSITION, COLUMN_DEFAULT, Is_Nullable, Data_Type, CHARACTER_MAXIMUM_LENGTH, Numeric_Precision, Numeric_Scale, DATETIME_PRECISION FROM INFORMATION_SCHEMA.COLUMNS";
+
                         // Open The command Object
                         SqlCommand command = new SqlCommand(sql, DatabaseConnection);
 
-                          // Create a data adapter
+                        // Create a Data adapter
                         SqlDataAdapter adapter = new SqlDataAdapter(command);
 
                         // Create And Open Data
@@ -1642,7 +1809,7 @@ namespace DataJuggler.Net
 
                         // Fill DataAdapter
                         adapter.Fill(DS, "fields");
-                        
+
                         // Get the sourceTable to iterate
                         System.Data.DataTable sourceTable = DataHelper.ReturnFirstTable(DS);
 
@@ -1657,7 +1824,7 @@ namespace DataJuggler.Net
                             {  
                                 // set to null first just in case a table is not found
                                 table = null;
-                                
+
                                 // Attempt to find the table
                                 table = tables.FirstOrDefault(x => x.Name == tableName);
 
@@ -1671,18 +1838,18 @@ namespace DataJuggler.Net
                                 {
                                     // look up the IdentityInfo object for this table
                                     tableIdentityInfo = identityColumns.FirstOrDefault(x => x.TableName == table.Name);
-                                    
+
                                     // Attempt to get the SchemaFields
                                     schemaFields = GetSchemaFields(table);
                                 }
                             }
-                            
+
                             // If the table object exists
                             if (NullHelper.Exists(table))
                             {
                                 // Set SchemaField to null for the new field
                                 schemaField = null;
-                                
+
                                 // Create New DataField
                                 DataJuggler.Net.DataField field = new DataField();
 
@@ -1703,10 +1870,10 @@ namespace DataJuggler.Net
 
                                 // Set fieldOrdinal
                                 field.FieldOrdinal = (int) databaseField["Ordinal_Position"];
-                                
+
                                 // Set dataType
                                 string dataType = databaseField["data_type"].ToString();
-                                
+
                                 // Set the DBDatatype
                                 field.DBDataType = dataType;
 
@@ -1720,68 +1887,38 @@ namespace DataJuggler.Net
                                     field.DefaultValue = defaultValue;
                                 }
 
-                                // if this is a decimal
-                                if ((dataType.Contains("Decimal")) || (dataType.Contains("Numeric")) || (dataType.Contains("Money")))
+                                // If the tableIdentityInfo object exists
+                                if (NullHelper.Exists(tableIdentityInfo))
                                 {
-                                    // Attempt to get the Precision & Scale
-                                    try
-                                    {
-                                        // attemp to get the money string
-                                        string sqlDataType = databaseField[23].ToString();
+                                    // see if this is auto increment
+                                    field.IsAutoIncrement = TextHelper.IsEqual(field.DBFieldName, tableIdentityInfo.ColumnName);
+                                }
 
-                                        // if the money string exists
-                                        if (sqlDataType == "System.Data.SqlTypes.SqlMoney")
-                                        {
-                                            // set the datatype
-                                            field.DataType = DataManager.DataTypeEnum.Currency;
-                                        }
-                                        else if (sqlDataType == "System.Data.SqlTypes.SqlDecimal")
-                                        {
-                                            // set the dataType
-                                            field.DataType = DataManager.DataTypeEnum.Decimal;
+                                // INFORMATION_SCHEMA returns the data type in lowercase, so compare case-insensitively
+                                if ((TextHelper.IsEqual(dataType, "money")) || (TextHelper.IsEqual(dataType, "smallmoney")))
+                                {
+                                    // money has a fixed precision and scale, so none are stored
+                                    field.DataType = DataManager.DataTypeEnum.Currency;
+                                }
+                                else if ((TextHelper.IsEqual(dataType, "decimal")) || (TextHelper.IsEqual(dataType, "numeric")))
+                                {
+                                    // set the dataType
+                                    field.DataType = DataManager.DataTypeEnum.Decimal;
 
-                                            // set precision and scale
-                                            string precision = databaseField["Numeric_Precision"].ToString();
-                                            string scale = databaseField["Numeric_Scale"].ToString();
+                                    // set the precision and scale (a missing value defaults to 0)
+                                    field.Precision = NumericHelper.ParseInteger(databaseField["Numeric_Precision"].ToString(), 0, 0);
+                                    field.Scale = NumericHelper.ParseInteger(databaseField["Numeric_Scale"].ToString(), 0, 0);
+                                }
+                                else if (TextHelper.IsEqual(dataType, "datetime2"))
+                                {
+                                    // set the dataType
+                                    field.DataType = DataManager.DataTypeEnum.DateTime;
 
-                                            // if the precision and scale exist
-                                            if (TextHelper.Exists(precision, scale))
-                                            {
-                                                // set the precision and scale
-                                                field.Precision = NumericHelper.ParseInteger(precision, 0, -1);
-                                                field.Scale = NumericHelper.ParseInteger(scale, 0, -1);
-
-                                                // if the Precision was found
-                                                if (field.Precision > 0)
-                                                {   
-                                                    // for some reason these numbers have to be divided by two
-                                                    field.Precision = field.Precision / 2;
-                                                }
-                                                
-                                                // if the Scale was found
-                                                if (field.Scale > 0)
-                                                {
-                                                    // for some reason these numbers have to be divided by two
-                                                    field.Scale = field.Scale / 2;
-                                                }
-                                            }
-                                        }
-                                    }
-                                    catch (Exception error2)
-                                    {
-                                        // for debugging only
-                                        string err2 = error2.ToString();
-                                    }
+                                    // store the number of fractional second digits (the 0 in datetime2(0))
+                                    field.Precision = NumericHelper.ParseInteger(databaseField["DATETIME_PRECISION"].ToString(), 0, 0);
                                 }
                                 else
                                 {
-                                    // If the tableIdentityInfo object exists
-                                    if (NullHelper.Exists(tableIdentityInfo))
-                                    {
-                                        // see if this is auto increment
-                                        field.IsAutoIncrement = TextHelper.IsEqual(field.DBFieldName, tableIdentityInfo.ColumnName);
-                                    }
-
                                     // Parse dataType
                                     field.DataType = ParseDataType(dataType, field.IsAutoIncrement);
                                 }
@@ -1791,7 +1928,7 @@ namespace DataJuggler.Net
                                 {
                                     // Set ColumnSize
                                     field.Size = schemaField.Size;
-                                
+
                                     // set the value from the schemaField
                                     field.IsNullable = schemaField.IsNullable;
 
@@ -1824,7 +1961,7 @@ namespace DataJuggler.Net
 
                                 // Find the InsertIndex so the fields are inserted in alphabetical order
                                 int insertIndex = FindInsertIndex(table.Fields, field);
-                                
+
                                 // Add to Fields Collection
                                 table.Fields.Insert(insertIndex, field);
                             }
@@ -1839,12 +1976,14 @@ namespace DataJuggler.Net
                     // Write the error to the debugger
                     DebugHelper.WriteDebugError("LoadDataFieldsSchema", "DataJuggler.Net.SQLDatabaseConnector", error);
                 }
-			}
-			#endregion
+            }
+            #endregion
 
             #region LoadDataIndexes(DataTable dataTable)
             /// <summary>
-            /// This method loads the Indexes for the Table given
+            /// This method loads the Indexes for the Table given. A multi-column index is
+            /// loaded as ONE DataIndex with multiple entries in its Columns list, not as
+            /// separate objects per column.
             /// </summary>
             /// <param name="dataTable"></param>
             /// <returns></returns>
@@ -1853,21 +1992,31 @@ namespace DataJuggler.Net
                 // initial value
                 List<DataIndex> indexes = new List<DataIndex>();
 
-                // local
+                // locals
                 DataIndex index = null;
+                DataIndex prevIndex = null;
+                int indexId = 0;
 
                 try
                 {
                     // if the dataTable exists
                     if (dataTable != null)
                     {
-                        // create the sql to get all the indexes for this table
-                        string sql = "Select * From sys.indexes where object_id = (select object_id from sys.objects where name = '[TableName]')".Replace("[TableName]", dataTable.Name);
+                        // create the sql to get all the indexes and their columns for this table,
+                        // ordered by index_id then key_ordinal, so every column belonging to the
+                        // same index arrives together, and in the correct order
+                        string sql = ("Select idx.object_id, idx.name, idx.index_id, idx.type, idx.type_desc, idx.is_unique, idx.data_space_id, idx.ignore_dup_key, idx.is_primary_key, idx.is_unique_constraint, idx.is_padded, idx.is_disabled, idx.is_hypothetical, idx.allow_row_locks, idx.allow_page_locks, idx.has_filter, idx.filter_definition, idx.fill_factor, " +
+                                     "col.name AS FieldName, ic.is_descending_key, ic.is_included_column, ic.key_ordinal " +
+                                     "From sys.indexes idx " +
+                                     "Inner Join sys.index_columns ic On ic.object_id = idx.object_id And ic.index_id = idx.index_id " +
+                                     "Inner Join sys.columns col On col.object_id = ic.object_id And col.column_id = ic.column_id " +
+                                     "Where idx.object_id = (select object_id from sys.objects where name = '[TableName]') " +
+                                     "Order By idx.index_id, ic.key_ordinal").Replace("[TableName]", dataTable.Name);
 
                         // Open The command Object
                         SqlCommand command = new SqlCommand(sql, DatabaseConnection);
 
-                        // Create a data adapter
+                        // Create a Data adapter
                         SqlDataAdapter adapter = new SqlDataAdapter(command);
 
                         // Create And Open Data
@@ -1876,48 +2025,67 @@ namespace DataJuggler.Net
                         // Fill DataAdapter
                         adapter.Fill(DS, "tables");
 
-                        // Load the CheckConstraints
+                        // Load the Indexes
                         foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
                         {
-                            // Create a new DataIndex object
-                            index = new DataIndex();
+                            // the index_id this row belongs to
+                            indexId = (int) dataRow["index_id"];
 
-                            // map the properites in the dataRow to the new DataIndex object
-                            index.ObjectId = (int)dataRow["object_id"];
-                            index.Name = (string)dataRow["Name"];
-                            index.IndexId = (int)dataRow["index_id"];
-                            index.IndexType = ParseIndexType(dataRow["type"]);
-                            index.TypeDescription = (string)dataRow["type_desc"];
-                            index.IsUnique = (bool)dataRow["is_unique"];
-                            index.DataSpaceId = (int)dataRow["data_space_id"];
-                            index.IgnoreDuplicateKey = (bool)dataRow["ignore_dup_key"];
-                            index.IsPrimary = (bool)dataRow["is_primary_key"];
-                            index.IsUniqueConstraint = (bool)dataRow["is_unique_constraint"];
-                            index.IsPadded = (bool)dataRow["is_padded"];
-                            index.IsDisabled = (bool)dataRow["is_disabled"];
-                            index.IsHypothetical = (bool)dataRow["is_hypothetical"];
-                            index.AllowRowLocks = (bool)dataRow["allow_row_locks"];
-                            index.AllowPageLocks = (bool)dataRow["allow_page_locks"];
-                            index.HasFilter = (bool)dataRow["has_filter"];
-                            index.FilterDefinition = dataRow["filter_definition"].ToString();
-
-                            // FillFactor null causes an error
-                            if (dataRow["fill_factor"] != null)
+                            // if this row belongs to the same index as the row before it, add to it instead of creating a new one
+                            if ((NullHelper.Exists(prevIndex)) && (prevIndex.IndexId == indexId))
                             {
-                                // Set the FillFactor
-                                string temp = dataRow["fill_factor"].ToString();
-
-                                // parse out the string
-                                index.FillFactor = Int32.Parse(temp);
+                                // reuse the index already in progress
+                                index = prevIndex;
                             }
                             else
                             {
-                                // Set the FillFactor
-                                index.FillFactor = 0;
+                                // Create a new DataIndex object
+                                index = new DataIndex();
+
+                                // map the properites in the dataRow to the new DataIndex object
+                                index.ObjectId = (int) dataRow["object_id"];
+                                index.Name = (string) dataRow["Name"];
+                                index.IndexId = indexId;
+                                index.IndexType = ParseIndexType(dataRow["type"]);
+                                index.TypeDescription = (string) dataRow["type_desc"];
+                                index.IsUnique = (bool) dataRow["is_unique"];
+                                index.DataSpaceId = (int) dataRow["data_space_id"];
+                                index.IgnoreDuplicateKey = (bool) dataRow["ignore_dup_key"];
+                                index.IsPrimary = (bool) dataRow["is_primary_key"];
+                                index.IsUniqueConstraint = (bool) dataRow["is_unique_constraint"];
+                                index.IsPadded = (bool) dataRow["is_padded"];
+                                index.IsDisabled = (bool) dataRow["is_disabled"];
+                                index.IsHypothetical = (bool) dataRow["is_hypothetical"];
+                                index.AllowRowLocks = (bool) dataRow["allow_row_locks"];
+                                index.AllowPageLocks = (bool) dataRow["allow_page_locks"];
+                                index.HasFilter = (bool) dataRow["has_filter"];
+                                index.FilterDefinition = dataRow["filter_definition"].ToString();
+
+                                // FillFactor null causes an error
+                                if (dataRow["fill_factor"] != null)
+                                {
+                                    // Set the FillFactor
+                                    string temp = dataRow["fill_factor"].ToString();
+
+                                    // parse out the string
+                                    index.FillFactor = Int32.Parse(temp);
+                                }
+                                else
+                                {
+                                    // Set the FillFactor
+                                    index.FillFactor = 0;
+                                }
+
+                                // add the new DataIndex to the indexes collection
+                                indexes.Add(index);
                             }
 
-                            // add the new DataIndex to the indexes collection
-                            indexes.Add(index);
+                            // add this column to the index
+                            // key_ordinal is tinyint (byte), so Convert instead of casting
+                            index.AddColumn((string) dataRow["FieldName"], (bool) dataRow["is_descending_key"], (bool) dataRow["is_included_column"], Convert.ToInt32(dataRow["key_ordinal"]));
+
+                            // remember this as the index currently in progress, for the next row
+                            prevIndex = index;
                         }
                     }
                 }
@@ -1983,7 +2151,7 @@ namespace DataJuggler.Net
                     // Set the connection
                     this.Command.Connection = databaseconnection;
                     
-					// If this table contains binary data
+					// If this table contains binary Data
 					if(dataTable.ContainsBinaryData)
 					{
 					    // Load DataRows with Binary Data
@@ -1991,7 +2159,7 @@ namespace DataJuggler.Net
 			        }
 			        else
 			        {
-			            // Load the Rows without binary data
+			            // Load the Rows without binary Data
 			            dataTable.Rows = LoadDataRowsWithoutBinaryData(dataTable);
                     }
                     			
@@ -2000,9 +2168,9 @@ namespace DataJuggler.Net
 				}
 				#endregion
 
-                #region LoadDataRowsWithBinaryData(DataTable dataTable)
+                #region LoadDataRowsWithBinaryData(DataTable dataTable, string sql)
                 /// <summary>
-                /// This method loads the data rows that contain binary data.
+                /// This method loads the Data rows that contain binary Data.
                 /// A SqlDataReader is used so that SequentialAccess can be set.
                 /// </summary>
                 /// <param name="dataTable"></param>
@@ -2089,7 +2257,7 @@ namespace DataJuggler.Net
                                             fieldValue = reader[fieldOrdinal];   
                                         }
                                         
-                                        // If this is a string and there is data trim it up
+                                        // If this is a string and there is Data trim it up
                                         if ((dataTable.Fields[fieldIndex].DataType == DataManager.DataTypeEnum.String) && (fieldValue != null))
                                         {
                                             // Trim as a string
@@ -2125,51 +2293,84 @@ namespace DataJuggler.Net
                 }
                 #endregion
 
-                #region LoadDataRowsWithoutBinaryData(DataTable dataTable)
+                #region LoadDataRowsWithoutBinaryData(DataTable dataTable, string sql = "")
                 /// <summary>
-                /// This method loads the DataRows without Binary data.
+                /// This method loads the DataRows without Binary Data.
                 /// </summary>
                 /// <param name="dataTable"></param>
                 /// <returns></returns>
-                private List<DataRow> LoadDataRowsWithoutBinaryData(DataTable dataTable)
+                public List<DataRow> LoadDataRowsWithoutBinaryData(DataTable dataTable, string sql = "")
                 {
-                    // Create DataSet
-                    DataSet dataSet = new DataSet();
+                    // locals
+                    int index = -1;
 
-                    // Create dataRow
-                    DataRow dataRow = new DataRow(dataTable);
-                
-                    // Create the adapter to read the fields
-                    SqlDataAdapter dataAdapter = new SqlDataAdapter(this.Command);
-
-                    // Fill DataAdapter
-                    dataAdapter.Fill(dataSet, dataTable.Name);
-                    
-                    // Loop through each row in the dataSet
-                    foreach (System.Data.DataRow tempDataRow in dataSet.Tables[dataTable.Name].Rows)
+                    try
                     {
-                        // Create A New row
-                        dataRow = new DataJuggler.Net.DataRow(dataTable);
+                        // Create DataSet
+                        DataSet dataSet = new DataSet();
 
-                        // Clone Fields Collection For This row
-                        dataRow.Fields = CloneFields(dataTable.ActiveFields);
+                        // Create dataRow
+                        DataRow dataRow = new DataRow(dataTable);
 
-                        // Add Each field
-                        foreach (DataJuggler.Net.DataField field in dataTable.ActiveFields)
+                        // Create the adapter to read the fields
+                        SqlDataAdapter dataAdapter = new SqlDataAdapter(this.Command);
+
+                        // if custom sql was passed in
+                        if (TextHelper.Exists(sql))
                         {
-                            // Finding field Index
-                            int fieldOrdinal = FindFieldOrdinalInDataRow(dataSet, dataTable.Name, field.FieldName, field.Caption);
+                            // Create the adapter to read the fields
+                            dataAdapter = new SqlDataAdapter(sql, this.DatabaseConnection);
 
-                            // Verify fieldOrdinal Was Found
-                            if (fieldOrdinal >= 0)
-                            {
-                                // Set This field 
-                                dataRow.Fields[field.Index].FieldValue = tempDataRow[fieldOrdinal];
-                            }
+                            // Fill DataAdapter
+                            dataAdapter.Fill(dataSet, sql);
                         }
+                        else
+                        {
+                            // Fill DataAdapter
+                            dataAdapter.Fill(dataSet, dataTable.Name);
+                        }
+                    
+                        // Loop through each row in the dataSet
+                        foreach (System.Data.DataRow tempDataRow in dataSet.Tables[dataTable.Name].Rows)
+                        {
+                            // reset
+                            index = -1;
 
-                        // Add This row
-                        dataTable.Rows.Add(dataRow);
+                            // Create A New row
+                            dataRow = new DataJuggler.Net.DataRow(dataTable);
+
+                            // Clone Fields Collection For This row
+                            dataRow.Fields = CloneFields(dataTable.ActiveFields);
+
+                            // Add Each field
+                            foreach (DataJuggler.Net.DataField field in dataTable.Fields)
+                            {
+                                // Increment the value for index
+                                index++;
+
+                                // Finding field Index
+                                int fieldOrdinal = FindFieldOrdinalInDataRow(dataSet, dataTable.Name, field.FieldName, field.Caption);
+
+                                // Verify fieldOrdinal Was Found
+                                if (fieldOrdinal >= 0)
+                                {
+                                    // Set This field 
+                                    dataRow.Fields[index].FieldValue = tempDataRow[fieldOrdinal];
+                                }
+                            }
+
+                            // Add This row
+                            dataTable.Rows.Add(dataRow);
+                        }
+                    }
+                    catch (Exception error)
+                    {
+                        // for debugging only
+                        string tableName = dataTable.Name;
+                        string temp = sql;
+                        
+                        // Set the error
+                        DebugHelper.WriteDebugError("LoadDataRowsWithoutBinaryData", "SQLDatabaseConnector", error);
                     }
                     
                     // return value
@@ -2179,20 +2380,83 @@ namespace DataJuggler.Net
 
             #endregion
 
-            #region LoadDataTablesData()
-            public List<DataTable> LoadDataTablesData(List<DataTable> tables)
+            #region LoadDataTablesData(List<DataTable> tables, List<string> ignoreTables = null, ProgressStatusCallback callback = null)
+            /// <summary>
+            /// This methods loads the data rows for the list of tables, unless the table is in the ignoreTables list.
+            /// </summary>
+            /// <param name="tables">The list of DataTables to load data rows for.</param>
+            /// <param name="ignoreTables">A list of table names to exclude from loading.</param>
+            /// <param name="callback">A delegate to callback and report the current status.</param>
+            /// <returns></returns>
+            public List<DataTable> LoadDataTablesData(List<DataTable> tables, List<string> ignoreTables = null, ProgressStatusCallback callback = null)
 			{
-	
+                // locals
+                bool skipTable = false;
+                int progress = 0;
+
+                // If the tables collection exists and has one or more items
+                if ((ListHelper.HasOneOrMoreItems(tables)) && (NullHelper.Exists(callback)))
+                {
+                     // Setup the graph again
+                     callback(tables.Count * 2, 0, "Loading data rows", tables.Count, 0, "Begin iterating table collection");
+                }
+
 				// Iterate Through tables Collection
 				for(int x = 0;x < tables.Count;x++)
 				{
-					// Load Rows For This table
-					tables[x].Rows = LoadDataRows(tables[x]);
+                    // reset
+                    skipTable = false;
+
+                    // If the ignoreTables collection exists and has one or more items
+                    if (ListHelper.HasOneOrMoreItems(ignoreTables))
+                    {
+                        // Iterate the collection of string objects
+                        foreach (string tableName in ignoreTables)
+                        {
+                            // if this table is found
+                            if (TextHelper.IsEqual(tableName, tables[x].Name))
+                            {
+                                // abort
+                                skipTable = true;
+
+                                // break out of the loop
+                                break;
+                            }
+                        }
+                    }
+
+                    // if the value for skipTable is false
+                    if (!skipTable)
+                    {
+                        // If the callback object exists
+                        if (NullHelper.Exists(callback))
+                        {
+                            // notify the caller the current status
+                            callback(tables.Count * 2, progress, "Loading data rows for table " + tables[x].Name, tables.Count, progress, "Preparing to load");
+                        }
+
+					    // Load Rows For This table
+					    tables[x].Rows = LoadDataRows(tables[x]);
+
+                        // If the callback object exists
+                        if (NullHelper.Exists(callback))
+                        {
+                            // notify the caller the current status
+                            callback(tables.Count * 2, progress + 1, "Loading data rows complete for table " + tables[x].Name, tables.Count, progress + 1, "Load complete");
+                        }
+                    }
+                    else
+                    {
+                        // notify the caller the current status
+                        callback(tables.Count * 2, progress, "Skipping table " + tables[x].Name, tables.Count, progress, "Table was in the ignore list");
+                    }
+
+                    // Increment the value for progress
+                    progress++;
 				}
 						
 				// Return tables
 				return tables;
-
 			}
 			#endregion
 
@@ -2275,19 +2539,28 @@ namespace DataJuggler.Net
                             }
                         }
                         
-                        // This is a quick and dirty way to exclude a table, it is on my to do list to handle this
-                        // a better way, but I haven't had the time to implement this feature yet.
-
-                        // If you have any tables you want to exclude, this is the place to do so
-                        //if (dataTable.Name == "TableNameToExclude")
-                        //{
-                        //    // do not add this table
-                        //    addTable = false;
-                        //}
-                       	
 						// If the table should be added (Test Again)
 						if (addTable)
 						{
+                            // Attempt to get the sqlObject
+                            SqlObject sqlObject = GetSqlObject(dataTable.Name);
+
+                            // If the sqlObject object exists
+                            if (NullHelper.Exists(sqlObject))
+                            {
+                                // This is used by DB Compare to create the correct Views or Stored Procedures
+                                // In the GenerateScriptsButton_Click event.
+                                dataTable.UsesAnsiNulls = sqlObject.UsesAnsiNulls;
+                                dataTable.UsesQuotedIdentifier = sqlObject.UsesQuotedIdentifier;
+
+                                // if this is a view
+                                if (dataTable.IsView)
+                                {
+                                    // Set the ViewText so we have it for generating scripts
+                                    dataTable.ViewText = sqlObject.Defintion;
+                                }
+                            }
+
 							// Increment TableCount
 							tableCount++;
 						
@@ -2305,6 +2578,9 @@ namespace DataJuggler.Net
                                 
                                 // load the Check Constraints
                                 dataTable.CheckConstraints = LoadCheckConstraints(dataTable);
+
+                                // Update 8.4.2022 load the default value Constraints
+                                dataTable.DefaultValueConstraints = LoadDefaultValueConstraints(dataTable);
                             }
 
 						    // Add This table
@@ -2412,7 +2688,9 @@ namespace DataJuggler.Net
 
             #region LoadAllForeignKeys()
             /// <summary>
-            /// This method is used to load all foreign key constraints for the database open by the DataConnector
+            /// This method is used to load all foreign key constraints for the database open by the DataConnector.
+            /// A composite (multi-column) foreign key is loaded as ONE ForeignKeyConstraint with multiple
+            /// entries in its Columns list, not as separate objects that happen to share the same Name.
             /// </summary>
             /// <returns></returns>
             public List<ForeignKeyConstraint> LoadAllForeignKeys()
@@ -2426,14 +2704,21 @@ namespace DataJuggler.Net
                 string columnName = "";
                 string referencedTableName = "";
                 string referencedColumnName = "";
+                int ordinal = 0;
                 ForeignKeyConstraint foreignKeyConstraint = null;
+                ForeignKeyConstraint prevForeignKeyConstraint = null;
 
-                // create a temporary list of all foreign keys to hold just the table name and the foreign key name
-                allForeignKeys = new List<ForeignKeyConstraint>();
-
-                // to save looking up the foreign keys for tables that do not have any
-                // first this query will return all the foreign keys for all tables in the database
-                string sql = "SELECT  obj.name AS FK_NAME, sch.name AS [schema_name], tab1.name AS [Table], col1.name AS [Column], tab2.name AS [Referenced_Table], col2.name AS [Referenced_Column] FROM sys.foreign_key_columns fkc INNER JOIN sys.objects obj ON obj.object_id = fkc.constraint_object_id INNER JOIN sys.tables tab1 ON tab1.object_id = fkc.parent_object_id INNER JOIN sys.schemas sch ON tab1.schema_id = sch.schema_id INNER JOIN sys.columns col1 ON col1.column_id = parent_column_id AND col1.object_id = tab1.object_id INNER JOIN sys.tables tab2 ON tab2.object_id = fkc.referenced_object_id INNER JOIN sys.columns col2 ON col2.column_id = referenced_column_id AND col2.object_id = tab2.object_id Order By tab1.Name, col1.Name";
+                string sql = "SELECT obj.name AS FK_NAME, sch.name AS [schema_name], tab1.name AS [Table], col1.name AS [Column], tab2.name AS [Referenced_Table], col2.name AS [Referenced_Column], fkc.constraint_column_id AS [Ordinal], " +
+                        "fk.delete_referential_action_desc AS [OnDelete], fk.update_referential_action_desc AS [OnUpdate], fk.is_disabled AS [IsDisabled] " +
+                        "FROM sys.foreign_key_columns fkc " +
+                        "INNER JOIN sys.foreign_keys fk ON fk.object_id = fkc.constraint_object_id " +
+                        "INNER JOIN sys.objects obj ON obj.object_id = fkc.constraint_object_id " +
+                        "INNER JOIN sys.tables tab1 ON tab1.object_id = fkc.parent_object_id " +
+                        "INNER JOIN sys.schemas sch ON tab1.schema_id = sch.schema_id " +
+                        "INNER JOIN sys.columns col1 ON col1.column_id = fkc.parent_column_id AND col1.object_id = tab1.object_id " +
+                        "INNER JOIN sys.tables tab2 ON tab2.object_id = fkc.referenced_object_id " +
+                        "INNER JOIN sys.columns col2 ON col2.column_id = fkc.referenced_column_id AND col2.object_id = tab2.object_id " +
+                        "Order By obj.name, fkc.constraint_column_id";
 
                 // Create a SqlCommand
                 SqlCommand command = new SqlCommand(sql, DatabaseConnection);
@@ -2445,12 +2730,12 @@ namespace DataJuggler.Net
                 DataSet ds = new DataSet();
 
                 // Fill the Adapter
-                adapter.Fill(ds,"ForeignKeys");
+                adapter.Fill(ds, "ForeignKeys");
 
                 // Load the identityColumns
                 System.Data.DataTable foreignKeysTable = DataHelper.ReturnFirstTable(ds);
-                    
-                    // iterate the rows
+
+                // iterate the rows
                 foreach (System.Data.DataRow row in foreignKeysTable.Rows)
                 {
                     // set the value for constraintName
@@ -2459,7 +2744,7 @@ namespace DataJuggler.Net
                     // set the value for TableName
                     tableName = (string) row["Table"];
 
-                    // Set the value for tableName
+                    // Set the value for columnName
                     columnName = (string) row["Column"];
 
                     // set the value for referencedTableName
@@ -2468,17 +2753,36 @@ namespace DataJuggler.Net
                     // set the value for referencedColumnName
                     referencedColumnName = (string) row["Referenced_Column"];
 
+                    // set the value for ordinal
+                    ordinal = (int) row["Ordinal"];
+
                     if (TextHelper.Exists(constraintName, tableName, columnName, referencedTableName, referencedColumnName))
                     {
-                        // Attempt to create a ForeignKeyConstraint
-                        foreignKeyConstraint = new ForeignKeyConstraint(constraintName, tableName, columnName, referencedTableName, referencedColumnName);
-                    }
+                        // if this row belongs to the same constraint as the row before it, add to it instead of creating a new one
+                        if ((NullHelper.Exists(prevForeignKeyConstraint)) && (TextHelper.IsEqual(constraintName, prevForeignKeyConstraint.Name)))
+                        {
+                            // reuse the constraint already in progress
+                            foreignKeyConstraint = prevForeignKeyConstraint;
+                        }
+                        else
+                        {
+                            // Attempt to create a ForeignKeyConstraint
+                            foreignKeyConstraint = new ForeignKeyConstraint(constraintName, tableName, referencedTableName);
 
-                    // If the foreignKeyConstraint object exists
-                    if (NullHelper.Exists(foreignKeyConstraint))
-                    {
-                        // add this foreignKeyConstraint to the collection of all foreign key constraints
-                        allForeignKeys.Add(foreignKeyConstraint);
+                            // cascade rules and enabled state (constraint-level, so only set once)
+                            foreignKeyConstraint.OnDelete = row["OnDelete"].ToString();
+                            foreignKeyConstraint.OnUpdate = row["OnUpdate"].ToString();
+                            foreignKeyConstraint.IsDisabled = (bool) row["IsDisabled"];
+
+                            // add this foreignKeyConstraint to the collection of all foreign key constraints
+                            allForeignKeys.Add(foreignKeyConstraint);
+                        }
+
+                        // add this column pair to the constraint (fills FieldName / ReferencedColumn too, when this is column 1)
+                        foreignKeyConstraint.AddColumn(columnName, referencedColumnName, ordinal);
+
+                        // remember this as the constraint currently in progress, for the next row
+                        prevForeignKeyConstraint = foreignKeyConstraint;
                     }
                 }
 
@@ -2487,6 +2791,88 @@ namespace DataJuggler.Net
             }
             #endregion
 
+            #region LoadDefaultValueConstraints(DataTable dataTable)
+            /// <summary>
+            /// returns a list of Default Value Constraints
+            /// </summary>
+            public List<DefaultValueConstraint> LoadDefaultValueConstraints(DataTable dataTable)
+            {
+                // initial value
+                List<DefaultValueConstraint> defaultValueConstraints = new List<DefaultValueConstraint>();
+
+                // local
+                DefaultValueConstraint defaultValueConstraint = null;
+
+                try
+                {
+                    // if the dataTable exists
+                    if (dataTable != null)
+                    {
+                        // create the sql to get all the CheckConstraints for this table
+                        string sql = "Select con.[name] as Constraint_Name, Schema_Name(t.schema_id) + '.' + t.[name]  as [Table], col.[name] as Column_Name, con.[definition] from sys.default_constraints con left outer join sys.objects t on con.parent_object_id = t.object_id left outer join sys.all_columns col on con.parent_column_id = col.column_id and con.parent_object_id = col.object_id Where t.name = '[TableName]' order by con.name".Replace("[TableName]", dataTable.Name);
+
+                        // Open The command Object
+                        SqlCommand command = new SqlCommand(sql, DatabaseConnection);
+
+                        // Create a Data adapter
+                        SqlDataAdapter adapter = new SqlDataAdapter(command);
+
+                        // Create And Open Data
+                        DataSet DS = new DataSet();
+
+                        // Fill DataAdapter
+                        adapter.Fill(DS, "tables");
+                        
+                        // if there is at least one row
+                       if (DS.Tables["tables"].Rows.Count > 0)
+                       {
+                            // Load the CheckConstraints
+                            foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
+                            {
+                                // Create a new CheckConstraint object
+                                defaultValueConstraint = new DefaultValueConstraint();
+
+                                // map the properites in the dataRow to the new checkConstraint object
+                                defaultValueConstraint.TableName = (string) dataRow["Table"];
+                                defaultValueConstraint.ColumnName = (string) dataRow["Column_Name"];                                
+                                defaultValueConstraint.ConstraintName = (string) dataRow["Constraint_Name"];
+
+                                string defaultValue = (string) dataRow["definition"];
+                                
+                                // if the string exists
+                                if (TextHelper.Exists(defaultValue))
+                                {
+                                    // remove any parents
+                                    defaultValue = defaultValue.Replace("(", "").Replace(")", "");
+
+                                    // Parse the DefaultValue
+                                    defaultValueConstraint.DefaultValue = NumericHelper.ParseDouble(defaultValue, -1090, -1091);
+                                }
+
+                                // if the value appears to be a valid number and been parsed
+                                if ((defaultValueConstraint.DefaultValue != -1090) && (defaultValueConstraint.DefaultValue != -1091))
+                                {
+                                    // add the new DefaultValueConstraint to the DefaultValueConstraints collection
+                                    defaultValueConstraints.Add(defaultValueConstraint);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (Exception error)
+                {
+                    // for debugging only
+                    string err = error.ToString();
+
+                    // Show the error to the output window if open.
+                    DebugHelper.WriteDebugError("LoadCheckConstraints", "SQLDatabaseConnector", error);
+                }
+                
+                // return value
+                return defaultValueConstraints;
+            }
+            #endregion
+            
             #region LoadForeignKeys(ref Database database)
             /// <summary>
             /// This method is used to load the foreign keys for each table in the database given.
@@ -2640,7 +3026,7 @@ namespace DataJuggler.Net
                         // if the procedure name contains dss
                         if (IgnoreDataSync)
                         {
-                            // if this procedure contains a data sync type name
+                            // if this procedure contains a Data sync type name
                             if (sp.ProcedureName.Contains("_dss"))
                             {
                                 // we need to skip this procedure
@@ -2684,6 +3070,17 @@ namespace DataJuggler.Net
 
                             // Attempt to find the text for this stored procedure
                             storedProcedure.Text = GetProcedureText(storedProcedure.ProcedureName);
+
+                            // Get the AnsiNull info
+                            SqlObject sqlObject = GetSqlObject(storedProcedure.ProcedureName);
+
+                            // If the sqlObject object exists
+                            if (NullHelper.Exists(sqlObject))
+                            {
+                                // Set these values
+                                storedProcedure.UsesAnsiNulls = sqlObject.UsesAnsiNulls;
+                                storedProcedure.UsesQuotedIdentifier = sqlObject.UsesQuotedIdentifier;
+                            }
                         }
                     }
 
@@ -3180,102 +3577,120 @@ namespace DataJuggler.Net
 			
 			#region ParseDataType(string dataType, bool isAutoIncrement)
             /// <summary>
-            /// Parse Data Type
+            /// Parses the Data Type
             /// </summary>
             /// <param name="dataType"></param>
             /// <param name="isAutoIncrement"></param>
             /// <returns></returns>
             public DataManager.DataTypeEnum ParseDataType(string dataType, bool isAutoIncrement)
-			{
+            {
                 // local
                 string fullDataType = dataType;
                 
                 if(isAutoIncrement)
-				{
-					// This Is An AutoNumber field
-					return DataManager.DataTypeEnum.Autonumber;
-				}
-				else
-				{
+	            {
+		            // This Is An AutoNumber field
+		            return DataManager.DataTypeEnum.Autonumber;
+	            }
+	            else
+	            {
                     // if there is an open paren
                     int index = dataType.IndexOf("(");
                     if (index >= 0)
                     {   
-                        // get the dataType before the paren
+                        // get the dataType before the paren (datetime2(0) becomes datetime2)
                         dataType = dataType.Substring(0, index);
                     }
 					
-					// Determine Database Type
-					switch(dataType.ToLower())
-					{
-						case "system.int16":
-						case "system.int32":
+		            // Determine Database Type
+		            switch(dataType.ToLower())
+		            {
+			            case "system.int16":
+			            case "system.int32":
                         case "system.byte":
                         case "int":
                         case "smallint":
+                        case "tinyint":
 						
-							// Integer
-							return DataManager.DataTypeEnum.Integer;
+				            // Integer
+				            return DataManager.DataTypeEnum.Integer;
 
+                        case "system.int64":
                         case "bigint":
-                        case "long":
 
-                            // long
-							return DataManager.DataTypeEnum.BigInt;
+                            // BigInt
+                            return DataManager.DataTypeEnum.BigInt;
 						
-						case "system.datetime":
+			            case "system.datetime":
                         case "datetime":
+                        case "datetime2":
+                        case "smalldatetime":
                         case "date":
                         case "system.date":
 							
-							// DataTime
-							return DataManager.DataTypeEnum.DateTime;
+				            // DataTime
+				            return DataManager.DataTypeEnum.DateTime;
 						
-						case "system.string":
+			            case "system.string":
                         case "varchar":
                         case "nvarchar":
                         case "nchar":
                         case "char":
+                        case "text":
+                        case "ntext":
 
                             // String
                             return DataManager.DataTypeEnum.String;
 						    
-						case "system.guid":
+			            case "system.guid":
                         case "uniqueidentifier":
 						
-							// GUID
-							return DataManager.DataTypeEnum.Guid;
-						
-						case "system.decimal":
+				            // GUID
+				            return DataManager.DataTypeEnum.Guid;
+
+                        case "system.decimal":
                         case "decimal":
                         case "numeric":
-						case "system.single":
-						case "system.double":
-						case "money":
+
+                            // Decimal (exact, apples to apples with the database)
+                            return DataManager.DataTypeEnum.Decimal;
+
+                        case "money":
+                        case "smallmoney":
+
+                            // Currency (same as LoadDataFieldsSchema uses for money)
+                            return DataManager.DataTypeEnum.Currency;
+						
+			            case "system.single":
+			            case "system.double":
                         case "float":
+                        case "real":
 						
-							// Double
-							return DataManager.DataTypeEnum.Double;
+				            // Double
+				            return DataManager.DataTypeEnum.Double;
 						
-						case "system.byte[]":
+			            case "system.byte[]":
+                        case "varbinary":
+                        case "binary":
+                        case "image":
 						
-							// Bytes Are Not Supported Yet
-							return DataManager.DataTypeEnum.Binary;
+				            // Binary (byte[] in the data objects)
+				            return DataManager.DataTypeEnum.Binary;
 						
-						case "system.boolean":
+			            case "system.boolean":
                         case "bit":
 						
-							// Boolean
-							return DataManager.DataTypeEnum.Boolean;
+				            // Boolean
+				            return DataManager.DataTypeEnum.Boolean;
 							
-						default:
+			            default:
 						
-							// Not Supported
-							return DataManager.DataTypeEnum.NotSupported;								
-					}
-				}
-			}
-			#endregion
+				            // Not Supported
+				            return DataManager.DataTypeEnum.NotSupported;								
+		            }
+	            }
+            }
+            #endregion
 
             #region ParseIndexType(object type)
             /// <summary>
@@ -3642,3 +4057,4 @@ namespace DataJuggler.Net
 	#endregion
     
 }
+

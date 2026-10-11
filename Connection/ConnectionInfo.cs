@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -26,6 +26,7 @@ namespace DataJuggler.Net.Connection
         private string databaseServer;
         private string databaseUserName;
         private bool integratedSecurity;
+        private bool encrypt;
         #endregion
 
         #region Consructor
@@ -142,6 +143,17 @@ namespace DataJuggler.Net.Connection
             }
             #endregion
 
+            #region Encrypt
+            /// <summary>
+            /// This property gets or sets the value for 'Encrypt'.
+            /// </summary>
+            public bool Encrypt
+            {
+                get { return encrypt; }
+                set { encrypt = value; }
+            }
+            #endregion
+            
             #region HasConnectionString
             /// <summary>
             /// This read only property returns true if this object has a ConnectionString set.
@@ -195,3 +207,4 @@ namespace DataJuggler.Net.Connection
     #endregion
 
 }
+

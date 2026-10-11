@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -22,26 +22,26 @@ namespace DataJuggler.Net
         
         #region Methods
         
-            #region FindForeignKey(string foreignKeyName, DataTable table)
+            #region FindForeignKey(string constraintName, DataTable table)
             /// <summary>
-            /// This method attempts to find a foreign key by name if it exists in the table given.
+            /// This method attempts to find a foreign key by columnName and referenceColumnName if it exists in the table given.
             /// </summary>
             /// <param name="name"></param>
             /// <param name="table"></param>
             /// <returns></returns>
-            public static ForeignKeyConstraint FindForeignKey(string foreignKeyName, DataTable table)
+            public static ForeignKeyConstraint FindForeignKey(string constraintName, DataTable table)
             {
                 // initial value
                 ForeignKeyConstraint foreignKey = null;
 
-                // if the foreignKeyName exists and the table exists and the table has one or more fields
-                if ((TextHelper.Exists(foreignKeyName)) && (NullHelper.Exists(table)) && (ListHelper.HasOneOrMoreItems(table.Fields)))
+                // if the constraintName exists and the table exists and the table has one or more fields
+                if ((TextHelper.Exists(constraintName)) && (NullHelper.Exists(table)) && (ListHelper.HasOneOrMoreItems(table.Fields)))
                 {
                     // if the foreign keys exist for this table
                     if (NullHelper.Exists(table.ForeignKeys))
                     {
-                        // return the foreignKey if it exists
-                        foreignKey = table.ForeignKeys.FirstOrDefault(x => x.Name == foreignKeyName);
+                        // return the foreignKey if it exists — Name is unique per table now, so this is unambiguous
+                        foreignKey = table.ForeignKeys.FirstOrDefault(x => x.Name == constraintName);
                     }
                 }
 
@@ -80,3 +80,4 @@ namespace DataJuggler.Net
     #endregion
 
 }
+

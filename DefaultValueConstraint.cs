@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -25,6 +25,7 @@ namespace DataJuggler.Net
         private string tableName;
         private string columnName;
         private double defaultValue;
+        private string definition;
         #endregion
 
         #region Properties
@@ -62,6 +63,17 @@ namespace DataJuggler.Net
             }
             #endregion
             
+            #region Definition
+            /// <summary>
+            /// This property gets or sets the value for 'Definition'.
+            /// </summary>
+            public string Definition
+            {
+                get { return definition; }
+                set { definition = value; }
+            }
+            #endregion
+            
             #region TableName
             /// <summary>
             /// This property gets or sets the value for 'TableName'.
@@ -79,3 +91,4 @@ namespace DataJuggler.Net
     #endregion
 
 }
+

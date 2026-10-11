@@ -1,10 +1,11 @@
-﻿
+
 
 #region using statements
 
 using System;
 using System.Collections.Generic;
-using System.IO;
+using DataJuggler.Core.UltimateHelper;
+using System.Linq;
 
 #endregion
 
@@ -70,6 +71,97 @@ namespace DataJuggler.Net
 
 		#region Methods
     
+            #region GetForeignKeysForColumn(DataTable table, string columnName)
+            /// <summary>
+            /// returns the foreign keys in this database that use the column given: the table's own foreign keys
+            /// on the column, and foreign keys in any table that reference it. Each foreign key is only returned once.
+            /// </summary>
+            public List<ForeignKeyConstraint> GetForeignKeysForColumn(DataTable table, string columnName)
+            {
+                // initial value
+                List<ForeignKeyConstraint> foreignKeys = new List<ForeignKeyConstraint>();
+
+                // locals
+                HashSet<string> added = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                bool usesColumn = false;
+
+                // if the table and column exist
+                if ((NullHelper.Exists(table)) && (TextHelper.Exists(columnName)))
+                {
+                    // if the table has foreign keys
+                    if (ListHelper.HasOneOrMoreItems(table.ForeignKeys))
+                    {
+                        // iterate the table's own foreign keys
+                        foreach (ForeignKeyConstraint foreignKey in table.ForeignKeys)
+                        {
+                            // check the single column (older loads) first
+                            usesColumn = String.Equals(foreignKey.FieldName, columnName, StringComparison.OrdinalIgnoreCase);
+
+                            // if not found and this foreign key has a columns list
+                            if ((!usesColumn) && (ListHelper.HasOneOrMoreItems(foreignKey.Columns)))
+                            {
+                                // check each column (composite foreign keys)
+                                usesColumn = foreignKey.Columns.Any(x => String.Equals(x.FieldName, columnName, StringComparison.OrdinalIgnoreCase));
+                            }
+
+                            // if this foreign key uses the column and was not already added
+                            if ((usesColumn) && (added.Add(foreignKey.Table + "." + foreignKey.Name)))
+                            {
+                                // add this foreign key
+                                foreignKeys.Add(foreignKey);
+                            }
+                        }
+                    }
+
+                    // if this database has one or more tables
+                    if (this.HasOneOrMoreTables)
+                    {
+                        // iterate every table, looking for foreign keys that reference this column
+                        foreach (DataTable otherTable in this.Tables)
+                        {
+                            // if this table has no foreign keys
+                            if (!ListHelper.HasOneOrMoreItems(otherTable.ForeignKeys))
+                            {
+                                // skip it
+                                continue;
+                            }
+
+                            // iterate this table's foreign keys
+                            foreach (ForeignKeyConstraint foreignKey in otherTable.ForeignKeys)
+                            {
+                                // if this foreign key does not reference the table given
+                                if (!String.Equals(foreignKey.ReferencedTable, table.Name, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    // skip it
+                                    continue;
+                                }
+
+                                // check the single referenced column (older loads) first
+                                usesColumn = String.Equals(foreignKey.ReferencedColumn, columnName, StringComparison.OrdinalIgnoreCase);
+
+                                // if not found and this foreign key has a columns list
+                                if ((!usesColumn) && (ListHelper.HasOneOrMoreItems(foreignKey.Columns)))
+                                {
+                                    // check each referenced column (composite foreign keys)
+                                    usesColumn = foreignKey.Columns.Any(x => String.Equals(x.ReferencedColumn, columnName, StringComparison.OrdinalIgnoreCase));
+                                }
+
+                                // if this foreign key references the column and was not already added
+                                if ((usesColumn) && (added.Add(foreignKey.Table + "." + foreignKey.Name)))
+                                {
+                                    // add this foreign key
+                                    foreignKeys.Add(foreignKey);
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // return value
+                return foreignKeys;
+            }
+            #endregion
+
 		#endregion
 		
 		#region Properties
@@ -402,3 +494,4 @@ namespace DataJuggler.Net
 	#endregion
     
 }
+

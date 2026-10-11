@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -167,3 +167,4 @@ namespace DataJuggler.Net.Connection
     #endregion
 
 }
+

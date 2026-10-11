@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -11,7 +11,7 @@ namespace DataJuggler.Net
 
     #region class DataHelper
     /// <summary>
-    /// Thjis class is used to help with certain data functions
+    /// Thjis class is used to help with certain Data functions
     /// </summary>
     public class DataHelper
     {
@@ -20,8 +20,8 @@ namespace DataJuggler.Net
 
             #region ReturnFirstRow(StoredProcedure storedProcedure)
             /// <summary>
-            /// This method returns the first data row of the first data table
-            /// in the data set passed in.
+            /// This method returns the first Data row of the first Data table
+            /// in the Data set passed in.
             /// </summary>
             /// <param name="dataSet"></param>
             /// <returns></returns>
@@ -36,7 +36,7 @@ namespace DataJuggler.Net
                     // test for rows
                     if ((dataSet.Tables[0].Rows != null) && (dataSet.Tables[0].Rows.Count > 0))
                     {
-                        // Create DataRow from data set
+                        // Create DataRow from Data set
                         row = dataSet.Tables[0].Rows[0];
                     }
                 }
@@ -48,8 +48,8 @@ namespace DataJuggler.Net
 
             #region ReturnFirstTable(DataSet dataSet)
             /// <summary>
-            /// This method returns first data table
-            /// in the data set passed in.
+            /// This method returns first Data table
+            /// in the Data set passed in.
             /// </summary>
             /// <param name="dataSet">The 'DataSet' to return the first table of.</param>
             /// <returns>The first DataTable of the DataSet if it exists.</returns>
@@ -76,3 +76,4 @@ namespace DataJuggler.Net
     #endregion
 
 }
+

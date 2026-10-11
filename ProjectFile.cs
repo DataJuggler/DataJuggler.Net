@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -360,7 +360,7 @@ namespace DataJuggler.Net
                     // initial value
                     bool isStoredProcedure = false;
 
-                    // if this is a StoredProcedure
+                    // if this is a DataAccessComponent.DataManager file
                     isStoredProcedure = ((this.ProjectType == DataManager.ProjectTypeEnum.DAC) && (this.HasFileName) && (this.FileName.EndsWith("StoredProcedure.cs")));
 
                     // return value
@@ -475,9 +475,9 @@ namespace DataJuggler.Net
 
                         // if this is a DataManager
                         if ((IsDataManager) || (IsReader) || (IsWriter))
-                        {  
+                        {
                             // Append the parent folder
-                            sb.Append(@"Data\");
+                            sb.Append(@"DataManager\");
 
                             // if the value for IsReader is true
                             if (IsReader)
@@ -543,3 +543,4 @@ namespace DataJuggler.Net
     #endregion
     
 }
+

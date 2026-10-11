@@ -144,6 +144,7 @@
     <Compile Include="DefaultValueConstraint.cs" />
     <Compile Include="Delegates\CallBackEvents.cs" />
     <Compile Include="Enumerations\Enumerations.cs" />
+    <Compile Include="ForeignKeyColumnPair.cs" />
     <Compile Include="ForeignKeyConstraint.cs" />
     <Compile Include="ForeignKeyConstraintHelper.cs" />
     <Compile Include="Function.cs" />
@@ -156,6 +157,7 @@
       <SubType>Code</SubType>
     </Compile>
     <Compile Include="IdentityInfo.cs" />
+    <Compile Include="IndexColumn.cs" />
     <Compile Include="ProjectFile.cs" />
     <Compile Include="ProjectFileManager.cs" />
     <Compile Include="CryptographyManager.cs" />
@@ -165,6 +167,7 @@
     <Compile Include="SQLGenerator.cs">
       <SubType>Code</SubType>
     </Compile>
+    <Compile Include="SqlObject.cs" />
     <Compile Include="Sql\SQLHelper.cs" />
     <Compile Include="Sql\SqlHelperParameterCache.cs" />
     <Compile Include="StoredProcedure.cs" />

@@ -19,7 +19,8 @@ namespace DataJuggler.Net
 
 		#region Private Variables
 		private string classfilename;
-		private DataManager.ClassOutputLanguage classlanguage;		
+		private DataManager.ClassOutputLanguage classlanguage;
+		private DataManager.FileOptions classfileoptions;
 		private string classname;
 		private List<Database> databases;
 		private bool exclude;
@@ -29,8 +30,8 @@ namespace DataJuggler.Net
 		private ReferencesSet references;
 		private bool serializable;
 		private string xmlfilename;
-		private bool addIGridValueInterface;		
-		private SQLDatabaseConnector dataConnector;
+		private DataManager.FileOptions xmlfileoptions;
+        private SQLDatabaseConnector dataConnector;
 		#endregion
 
 		#region Constructor
@@ -43,11 +44,15 @@ namespace DataJuggler.Net
 
 				// Create References Collection
 				this.references = new ReferencesSet();
+
+				// Set FileOptions Default
+				this.ClassFileOptions = DataManager.FileOptions.SingleFile;
+
 			}
 			#endregion
 		
-			#region DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage, bool addIGridValueInterface = false)
-			public DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage, bool addIGridValueInterface = false)
+			#region DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage)
+			public DataManager(string projectFolder, string projectName, DataManager.ClassOutputLanguage OutputLanguage)
 			{
 				// Set ClassLanguage
 				this.ClassLanguage = OutputLanguage;
@@ -58,12 +63,12 @@ namespace DataJuggler.Net
 				// Create References Collection
 				this.references = new ReferencesSet();
 
+				// Set FileOptions Default
+				this.ClassFileOptions = DataManager.FileOptions.SingleFile;
+
 				// Set ProjectFolder, ClassFileName & xmlFileName
 				this.ProjectFolder = projectFolder;
 				this.ProjectName = projectName;
-
-				// Set this here
-				this.AddIGridValueInterface = addIGridValueInterface;
 			}
 			#endregion
 			
@@ -201,15 +206,15 @@ namespace DataJuggler.Net
 
 				switch(dataType)
 				{
-					case DataManager.DataTypeEnum.Autonumber:
-					case DataManager.DataTypeEnum.Currency:
-					case DataManager.DataTypeEnum.Double:
-					case DataManager.DataTypeEnum.String:
-					case DataManager.DataTypeEnum.Integer:
-					case DataManager.DataTypeEnum.DateTime:
-			        case DataManager.DataTypeEnum.Boolean:
-			        case DataManager.DataTypeEnum.Guid:
-
+					case DataTypeEnum.Autonumber:
+					case DataTypeEnum.Currency:
+					case DataTypeEnum.Double:
+					case DataTypeEnum.String:
+					case DataTypeEnum.Integer:
+					case DataTypeEnum.DateTime:
+			        case DataTypeEnum.Boolean:
+			        case DataTypeEnum.Guid:
+					
 					// Added Object for supporting custom code generations (outside of DataTier.Net)
 					case DataTypeEnum.Object:
 
@@ -251,17 +256,6 @@ namespace DataJuggler.Net
 		
 		#region Properties
 
-			#region AddIGridValueInterface
-			/// <summary>
-			/// This property gets or sets the value for 'AddIGridValueInterface'.
-			/// </summary>
-			public bool AddIGridValueInterface
-			{
-				get { return addIGridValueInterface; }
-				set { addIGridValueInterface = value; }
-			}
-			#endregion
-
 			#region ClassName
 			public string ClassName
 			{
@@ -289,6 +283,20 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
+
+			#region ClassFileOptions
+			public DataManager.FileOptions ClassFileOptions
+			{
+				get
+				{
+					return classfileoptions;
+				}
+				set
+				{
+					classfileoptions = value;
+				}
+			}
+			#endregion	
 
 			#region Databases
 			public List<Database> Databases
@@ -329,23 +337,6 @@ namespace DataJuggler.Net
 			}
 			#endregion	
 			
-			#region HasReferences
-			/// <summary>
-			/// This property returns true if this object has a 'References'.
-			/// </summary>
-			public bool HasReferences
-			{
-				get
-				{
-					// initial value
-					bool hasReferences = (References != null);
-
-					// return value
-					return hasReferences;
-				}
-			}
-			#endregion
-
 			#region NamespaceName
 			public string NamespaceName
 			{
@@ -422,7 +413,7 @@ namespace DataJuggler.Net
 			}
 			#endregion
 
-			#region XmlFileName
+			#region xmlFileName
 			public string XmlFileName
 			{
 				get
@@ -435,6 +426,20 @@ namespace DataJuggler.Net
 				}
 			}
 			#endregion
+
+			#region XmlFileOptions	
+			public DataManager.FileOptions XmlFileOptions
+			{
+				get
+				{
+					return xmlfileoptions;
+				}
+				set
+				{
+					xmlfileoptions = value;
+				}
+			}
+			#endregion	
 
 			#region ClassLanguage	
 			public DataManager.ClassOutputLanguage ClassLanguage
@@ -484,28 +489,37 @@ namespace DataJuggler.Net
 			#endregion
 
             #region Enum DataTypeEnum
-			public enum DataTypeEnum : int
-			{
-				NotSupported = 0,
+            public enum DataTypeEnum : int
+            {
+                NotSupported = 0,
+				BigInt =  10006,
 				Object = 1,
-				Autonumber = 3,
-				Currency = 6,
-				DateTime = 7,
-				Double = 5,
-				Integer = 2,
-				BigInt = 15,
-				Percentage = 4,
-				String = 130,
-				YesNo = 11,
-				Decimal = 12,
-				DataTable = 10000,
-				Binary = 10001,
-				Boolean = 10002,
-				Guid = 10003,
-				Custom = 10004,
-				Enumeration = 10005
-			}
-			#endregion
+                Autonumber = 3,
+                Currency = 6,
+                DateTime = 7,
+                Double = 5,
+                Integer = 2,
+                Percentage = 4,
+                String = 130,
+                YesNo = 11,
+                Decimal = 12,
+                DataTable = 10000,
+                Binary = 10001,
+                Boolean = 10002,
+                Guid = 10003,
+                Custom = 10004,
+                Enumeration = 10005
+            }
+            #endregion
+
+            #region Enum FileOptions
+            public enum FileOptions : int
+            {
+                SeperateFilesPerTable = 0,
+                SingleFile = 1,
+                SeperateFilesPerDatabase = 2
+            }
+            #endregion
 
             #region enum ProjectTypeEnum : int
             /// <summary>

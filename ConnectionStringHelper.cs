@@ -1,4 +1,4 @@
-﻿
+
 
 #region using statements
 
@@ -21,17 +21,20 @@ namespace DataJuggler.Net
         /// <summary>
         /// This method builds a connection string when Windows Authentication is used.
         /// </summary>
-        /// <param name="ServerName"></param>
-        /// <param name="DatabaseName"></param>
+        /// <param name="ServerName">The SQL Server Name.</param>
+        /// <param name="DatabaseName">The database name.</param>
+        /// <param name="encrypt">Starting in 4.0, Microsoft.Data.SqlClient turns on Encryption by default.
+        /// If your database is encrypted, pass in true here.</param>
         /// <returns></returns>
-        public static string BuildConnectionString(string serverName, string databaseName)
+        public static string BuildConnectionString(string serverName, string databaseName, bool encrypt = false)
         {
             // Create an instance of the SqlConnectionStringBuilder
-            SqlConnectionStringBuilder connectionStringBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder();
+            SqlConnectionStringBuilder connectionStringBuilder = new SqlConnectionStringBuilder();
 
             connectionStringBuilder.DataSource = serverName;
             connectionStringBuilder.InitialCatalog = databaseName;
             connectionStringBuilder.IntegratedSecurity = true;
+            connectionStringBuilder.Encrypt = encrypt;
             
             // Return Built Connection String
             return connectionStringBuilder.ConnectionString;
@@ -42,15 +45,17 @@ namespace DataJuggler.Net
         /// This method builds a connection string when SQLServer Authentication is used.
         /// A UserId and Password are required for this method.
         /// </summary>
-        /// <param name="serverName"></param>
-        /// <param name="databaseName"></param>
-        /// <param name="userId"></param>
-        /// <param name="password"></param>
+        /// <param name="ServerName">The SQL Server Name.</param>
+        /// <param name="DatabaseName">The database name.</param>
+        /// <param name="userId">Sql Server user name for this connection.</param>
+        /// <param name="password">Sql Server server password for this connection.</param>
+        /// <param name="encrypt">Starting in 4.0, Microsoft.Data.SqlClient turns on Encryption by default.
+        /// If your database is encrypted, pass in true here.</param>
         /// <returns></returns>
-        public static string BuildConnectionString(string serverName, string databaseName, string userId, string password)
+        public static string BuildConnectionString(string serverName, string databaseName, string userId, string password, bool encrypt = false)
         {
             // Create an instance of the SqlConnectionStringBuilder
-            SqlConnectionStringBuilder connectionStringBuilder = new Microsoft.Data.SqlClient.SqlConnectionStringBuilder();
+            SqlConnectionStringBuilder connectionStringBuilder = new SqlConnectionStringBuilder();
 
             // set the properties
             connectionStringBuilder.DataSource = serverName;
@@ -58,6 +63,7 @@ namespace DataJuggler.Net
             connectionStringBuilder.IntegratedSecurity = false;
             connectionStringBuilder.UserID = userId;
             connectionStringBuilder.Password = password;
+            connectionStringBuilder.Encrypt = encrypt;
 
             // Return Built Connection String
             return connectionStringBuilder.ConnectionString;
@@ -68,3 +74,4 @@ namespace DataJuggler.Net
     #endregion
 
 }
+
