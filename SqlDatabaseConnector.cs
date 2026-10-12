@@ -2793,7 +2793,8 @@ namespace DataJuggler.Net
 
             #region LoadDefaultValueConstraints(DataTable dataTable)
             /// <summary>
-            /// returns a list of Default Value Constraints
+            /// returns a list of Default Value Constraints. Every default is loaded with its raw Definition
+            /// (numeric, date, guid and text defaults); DefaultValue is also set when the definition is a number.
             /// </summary>
             public List<DefaultValueConstraint> LoadDefaultValueConstraints(DataTable dataTable)
             {
@@ -2802,13 +2803,15 @@ namespace DataJuggler.Net
 
                 // local
                 DefaultValueConstraint defaultValueConstraint = null;
+                string definition = "";
+                string numericValue = "";
 
                 try
                 {
                     // if the dataTable exists
                     if (dataTable != null)
                     {
-                        // create the sql to get all the CheckConstraints for this table
+                        // create the sql to get all the DefaultValueConstraints for this table
                         string sql = "Select con.[name] as Constraint_Name, Schema_Name(t.schema_id) + '.' + t.[name]  as [Table], col.[name] as Column_Name, con.[definition] from sys.default_constraints con left outer join sys.objects t on con.parent_object_id = t.object_id left outer join sys.all_columns col on con.parent_column_id = col.column_id and con.parent_object_id = col.object_id Where t.name = '[TableName]' order by con.name".Replace("[TableName]", dataTable.Name);
 
                         // Open The command Object
@@ -2822,39 +2825,39 @@ namespace DataJuggler.Net
 
                         // Fill DataAdapter
                         adapter.Fill(DS, "tables");
-                        
+
                         // if there is at least one row
-                       if (DS.Tables["tables"].Rows.Count > 0)
-                       {
-                            // Load the CheckConstraints
+                        if (DS.Tables["tables"].Rows.Count > 0)
+                        {
+                            // Load the DefaultValueConstraints
                             foreach (System.Data.DataRow dataRow in DS.Tables["tables"].Rows)
                             {
-                                // Create a new CheckConstraint object
+                                // Create a new DefaultValueConstraint object
                                 defaultValueConstraint = new DefaultValueConstraint();
 
-                                // map the properites in the dataRow to the new checkConstraint object
+                                // map the properites in the dataRow to the new defaultValueConstraint object
                                 defaultValueConstraint.TableName = (string) dataRow["Table"];
-                                defaultValueConstraint.ColumnName = (string) dataRow["Column_Name"];                                
+                                defaultValueConstraint.ColumnName = (string) dataRow["Column_Name"];
                                 defaultValueConstraint.ConstraintName = (string) dataRow["Constraint_Name"];
 
-                                string defaultValue = (string) dataRow["definition"];
-                                
+                                // get the raw definition, e.g. ((1)), (getdate()), (newid()), (N'Pending')
+                                definition = (string) dataRow["definition"];
+
+                                // store the raw definition, used to compare and to script the default
+                                defaultValueConstraint.Definition = definition;
+
                                 // if the string exists
-                                if (TextHelper.Exists(defaultValue))
+                                if (TextHelper.Exists(definition))
                                 {
-                                    // remove any parents
-                                    defaultValue = defaultValue.Replace("(", "").Replace(")", "");
+                                    // remove any parens
+                                    numericValue = definition.Replace("(", "").Replace(")", "");
 
-                                    // Parse the DefaultValue
-                                    defaultValueConstraint.DefaultValue = NumericHelper.ParseDouble(defaultValue, -1090, -1091);
+                                    // Parse the DefaultValue (only numeric defaults parse, everything else uses the Definition)
+                                    defaultValueConstraint.DefaultValue = NumericHelper.ParseDouble(numericValue, -1090, -1091);
                                 }
 
-                                // if the value appears to be a valid number and been parsed
-                                if ((defaultValueConstraint.DefaultValue != -1090) && (defaultValueConstraint.DefaultValue != -1091))
-                                {
-                                    // add the new DefaultValueConstraint to the DefaultValueConstraints collection
-                                    defaultValueConstraints.Add(defaultValueConstraint);
-                                }
+                                // add every default, numeric or not
+                                defaultValueConstraints.Add(defaultValueConstraint);
                             }
                         }
                     }
@@ -2865,9 +2868,9 @@ namespace DataJuggler.Net
                     string err = error.ToString();
 
                     // Show the error to the output window if open.
-                    DebugHelper.WriteDebugError("LoadCheckConstraints", "SQLDatabaseConnector", error);
+                    DebugHelper.WriteDebugError("LoadDefaultValueConstraints", "SQLDatabaseConnector", error);
                 }
-                
+
                 // return value
                 return defaultValueConstraints;
             }
