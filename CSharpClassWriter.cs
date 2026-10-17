@@ -357,8 +357,25 @@ namespace DataJuggler.Net
 
                         case DataManager.DataTypeEnum.DateTime:
 
-                            // set dataType to DateTime
-                            dataType = "DateTime";
+                            // if this field is nullable
+                            if (field.IsNullable)
+                            {
+                                // set dataType to DateTime?
+                                dataType = "DateTime?";
+                            }
+                            else
+                            {
+                                // set dataType to DateTime
+                                dataType = "DateTime";
+                            }
+
+                            // required
+                            break;
+
+                        case DataManager.DataTypeEnum.DateTimeNullable:
+
+                            // set dataType to DateTime?
+                            dataType = "DateTime?";
 
                             // required
                             break;
@@ -3894,19 +3911,6 @@ namespace DataJuggler.Net
         /// <param name="table"></param>
         private void WriteUpdateIdentityMethod(DataTable table)
         {
-            //#region UpdateIdentity(int id)
-            ///// <summary>
-            ///// This method provides a "setter"
-            ///// functionality for the Identity field.
-            ///// </summary>
-            ///// <param name="id"></param>
-            //public void UpdateIdentity(int id)
-            //{
-            //    // update the UserId value
-            //    this.userId = id;
-            //} 
-            //#endregion
-
             // initial value
             string line = null;
 

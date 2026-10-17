@@ -1195,6 +1195,9 @@ namespace DataJuggler.Net
                                 // Set the DBDatatype
                                 field.DBDataType = dataType;
 
+                                 // Set IsNullable
+                                field.IsNullable = (bool)databaseField["AllowDbNull"];
+
                                 // if this is a decimal
                                 if (dataType == "System.Decimal")
                                 {
@@ -1240,14 +1243,11 @@ namespace DataJuggler.Net
                                     field.IsAutoIncrement = (bool)databaseField["isAutoIncrement"];
 
                                     // Parse dataType
-                                    field.DataType = ParseDataType(dataType, field.IsAutoIncrement);
+                                    field.DataType = ParseDataType(dataType, field);
                                 }
 
                                 // Set ColumnSize
                                 field.Size = (int)databaseField["ColumnSize"];
-
-                                // Set IsNullable
-                                field.IsNullable = (bool)databaseField["AllowDbNull"];
 
                                 // Set IsNullable
                                 field.IsReadOnly = (bool)databaseField["IsReadOnly"];
@@ -1384,7 +1384,13 @@ namespace DataJuggler.Net
 
                                 // set the Data type
                                 string dataTypeString = row["type"].ToString();
-                                parameter.DataType = ParseDataType(dataTypeString, false);
+
+                                // faking this out
+                                DataField field = new DataField();
+                                field.FieldName = parameter.ParameterName;
+
+                                // parse the DataType
+                                parameter.DataType = ParseDataType(dataTypeString, field);
 
                                 // convert to an integer
                                 parameter.Length = Convert.ToInt32(row["Length"]);
@@ -1866,6 +1872,13 @@ namespace DataJuggler.Net
                                     schemaField = schemaFields.FirstOrDefault(x => x.FieldName == field.FieldName);
                                 }
 
+                                // If the schemaField object exists
+                                if (NullHelper.Exists(schemaField))
+                                {
+                                    // set the value from the schemaField
+                                    field.IsNullable = schemaField.IsNullable;
+                                }
+
                                 // Set Properties
 
                                 // Set fieldOrdinal
@@ -1920,7 +1933,7 @@ namespace DataJuggler.Net
                                 else
                                 {
                                     // Parse dataType
-                                    field.DataType = ParseDataType(dataType, field.IsAutoIncrement);
+                                    field.DataType = ParseDataType(dataType, field);
                                 }
 
                                 // If the schemaField object exists
@@ -1929,8 +1942,7 @@ namespace DataJuggler.Net
                                     // Set ColumnSize
                                     field.Size = schemaField.Size;
 
-                                    // set the value from the schemaField
-                                    field.IsNullable = schemaField.IsNullable;
+                                    
 
                                     // Set IsNullable
                                     field.IsReadOnly = schemaField.IsReadOnly;
@@ -3306,7 +3318,13 @@ namespace DataJuggler.Net
                         
                             // set the dataType
                             string dataTypeString = dataRow["Type"].ToString();
-                            parameter.DataType = ParseDataType(dataTypeString, false);
+
+                            // faking this out
+                            DataField field = new DataField();
+                            field.FieldName = parameter.ParameterName;
+
+                            // Get the data type
+                            parameter.DataType = ParseDataType(dataTypeString, field);
 
                             // set the Length (could be needed)
                             string lengthString = dataRow["Length"].ToString();
@@ -3406,6 +3424,9 @@ namespace DataJuggler.Net
                                 // check if this field is hidden, if yes do not include it
                                 string rawValue = databaseField["Is_Hidden"].ToString();
                                 bool hidden = BooleanHelper.ParseBoolean(rawValue, true, true);
+
+                                // Set IsNullable
+                                field.IsNullable = (bool)databaseField["is_nullable"];
                             
                                 // if the field is not hidden 
                                 // solves problem of aliased fields appearing in the select statements
@@ -3467,7 +3488,7 @@ namespace DataJuggler.Net
                                         field.IsAutoIncrement = (bool)databaseField["is_identity_column"];
 
                                         // Parse dataType
-                                        field.DataType = ParseDataType(dataType, field.IsAutoIncrement);
+                                        field.DataType = ParseDataType(dataType, field);
                                     }
 
                                     // Attemp to set the column size
@@ -3479,8 +3500,7 @@ namespace DataJuggler.Net
                                         field.Size = size;
                                     }
 
-                                    // Set IsNullable
-                                    field.IsNullable = (bool)databaseField["is_nullable"];
+                                   
 
                                     // Set IsReadOnly
                                     field.IsReadOnly = (bool)databaseField["is_updateable"];
@@ -3578,120 +3598,171 @@ namespace DataJuggler.Net
 			}
 			#endregion
 			
-			#region ParseDataType(string dataType, bool isAutoIncrement)
+			#region ParseDataType(string dataType, DataField field)
             /// <summary>
             /// Parses the Data Type
             /// </summary>
             /// <param name="dataType"></param>
             /// <param name="isAutoIncrement"></param>
             /// <returns></returns>
-            public DataManager.DataTypeEnum ParseDataType(string dataType, bool isAutoIncrement)
+            public DataManager.DataTypeEnum ParseDataType(string dataType, DataField field)
             {
-                // local
-                string fullDataType = dataType;
+                // initial value
+                DataManager.DataTypeEnum returnValue = DataManager.DataTypeEnum.NotSupported;
+
+                // If the field object exists
+                if (NullHelper.Exists(field))
+                {
+                    // local
+                    string fullDataType = dataType;
                 
-                if(isAutoIncrement)
-	            {
-		            // This Is An AutoNumber field
-		            return DataManager.DataTypeEnum.Autonumber;
-	            }
-	            else
-	            {
-                    // if there is an open paren
-                    int index = dataType.IndexOf("(");
-                    if (index >= 0)
-                    {   
-                        // get the dataType before the paren (datetime2(0) becomes datetime2)
-                        dataType = dataType.Substring(0, index);
-                    }
+                    // if the value for isAutoIncrement is true
+                    if(field.IsAutoIncrement)
+	                {
+		                // This Is An AutoNumber field
+		                returnValue = DataManager.DataTypeEnum.Autonumber;
+	                }
+	                else
+	                {
+                        // if there is an open paren
+                        int index = dataType.IndexOf("(");
+                        if (index >= 0)
+                        {   
+                            // get the dataType before the paren (datetime2(0) becomes datetime2)
+                            dataType = dataType.Substring(0, index);
+                        }
 					
-		            // Determine Database Type
-		            switch(dataType.ToLower())
-		            {
-			            case "system.int16":
-			            case "system.int32":
-                        case "system.byte":
-                        case "int":
-                        case "smallint":
-                        case "tinyint":
+		                // Determine Database Type
+		                switch(dataType.ToLower())
+		                {
+			                case "system.int16":
+			                case "system.int32":
+                            case "system.byte":
+                            case "int":
+                            case "smallint":
+                            case "tinyint":
 						
-				            // Integer
-				            return DataManager.DataTypeEnum.Integer;
+				                // Integer
+				                returnValue =  DataManager.DataTypeEnum.Integer;
 
-                        case "system.int64":
-                        case "bigint":
+                                // required
+                                break;
 
-                            // BigInt
-                            return DataManager.DataTypeEnum.BigInt;
+                            case "system.int64":
+                            case "bigint":
+
+                                // BigInt
+                                returnValue = DataManager.DataTypeEnum.BigInt;
+
+                                // required
+                                break;
 						
-			            case "system.datetime":
-                        case "datetime":
-                        case "datetime2":
-                        case "smalldatetime":
-                        case "date":
-                        case "system.date":
+			                case "system.datetime":
+                            case "datetime":
+                            case "datetime2":
+                            case "smalldatetime":
+                            case "date":
+                            case "system.date":
+
+                                // If the value for the property field.IsNullable is true
+                                if (field.IsNullable)
+                                {
+                                    // new 
+                                    returnValue = DataManager.DataTypeEnum.DateTimeNullable;
+                                }
 							
-				            // DataTime
-				            return DataManager.DataTypeEnum.DateTime;
-						
-			            case "system.string":
-                        case "varchar":
-                        case "nvarchar":
-                        case "nchar":
-                        case "char":
-                        case "text":
-                        case "ntext":
+				                // DataTime
+				                returnValue = DataManager.DataTypeEnum.DateTime;
 
-                            // String
-                            return DataManager.DataTypeEnum.String;
+                                // required
+                                break;
+						
+			                case "system.string":
+                            case "varchar":
+                            case "nvarchar":
+                            case "nchar":
+                            case "char":
+                            case "text":
+                            case "ntext":
+
+                                // String
+                                returnValue = DataManager.DataTypeEnum.String;
+
+                                // required
+                                break;
 						    
-			            case "system.guid":
-                        case "uniqueidentifier":
+			                case "system.guid":
+                            case "uniqueidentifier":
 						
-				            // GUID
-				            return DataManager.DataTypeEnum.Guid;
+				                // GUID
+				                returnValue = DataManager.DataTypeEnum.Guid;
 
-                        case "system.decimal":
-                        case "decimal":
-                        case "numeric":
+                                // required
+                                break;
 
-                            // Decimal (exact, apples to apples with the database)
-                            return DataManager.DataTypeEnum.Decimal;
+                            case "system.decimal":
+                            case "decimal":
+                            case "numeric":
 
-                        case "money":
-                        case "smallmoney":
+                                // Decimal (exact, apples to apples with the database)
+                                returnValue = DataManager.DataTypeEnum.Decimal;
 
-                            // Currency (same as LoadDataFieldsSchema uses for money)
-                            return DataManager.DataTypeEnum.Currency;
+                                // required
+                                break;
+
+                            case "money":
+                            case "smallmoney":
+
+                                // Currency (same as LoadDataFieldsSchema uses for money)
+                                returnValue = DataManager.DataTypeEnum.Currency;
+
+                                // required
+                                break;
 						
-			            case "system.single":
-			            case "system.double":
-                        case "float":
-                        case "real":
+			                case "system.single":
+			                case "system.double":
+                            case "float":
+                            case "real":
 						
-				            // Double
-				            return DataManager.DataTypeEnum.Double;
+				                // Double
+				                returnValue = DataManager.DataTypeEnum.Double;
+
+                                // required
+                                break;
 						
-			            case "system.byte[]":
-                        case "varbinary":
-                        case "binary":
-                        case "image":
+			                case "system.byte[]":
+                            case "varbinary":
+                            case "binary":
+                            case "image":
 						
-				            // Binary (byte[] in the data objects)
-				            return DataManager.DataTypeEnum.Binary;
+				                // Binary (byte[] in the data objects)
+				                returnValue = DataManager.DataTypeEnum.Binary;
+
+                                // required
+                                break;
 						
-			            case "system.boolean":
-                        case "bit":
+			                case "system.boolean":
+                            case "bit":
 						
-				            // Boolean
-				            return DataManager.DataTypeEnum.Boolean;
+				                // Boolean
+				                returnValue = DataManager.DataTypeEnum.Boolean;
+
+                                // required
+                                break;
 							
-			            default:
+			                default:
 						
-				            // Not Supported
-				            return DataManager.DataTypeEnum.NotSupported;								
-		            }
-	            }
+				                // Not Supported
+				                returnValue = DataManager.DataTypeEnum.NotSupported;
+
+                                // required
+                                break;                            
+		                }
+	                }
+                }
+
+                // retrurn value
+                return returnValue;
             }
             #endregion
 

@@ -491,6 +491,7 @@ namespace DataJuggler.Net
 				Autonumber = 3,
 				Currency = 6,
 				DateTime = 7,
+				DateTimeNullable = 8,
 				Double = 5,
 				Integer = 2,
 				BigInt = 15,

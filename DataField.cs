@@ -12,7 +12,7 @@ namespace DataJuggler.Net
 
     #region Class DataField
 	/// <summary>
-	/// DataField Object Used For DataJuggler.Net
+	/// DataField Object Used For DataJuggler.Net	
 	/// </summary>
 	[Serializable]
 	public class DataField
